@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_LOANS, MOCK_EMPLOYEES } from '../constants';
 import { LoanRecord, UserRole } from '../types';
-import { Wallet, Plus, AlertCircle, X, Search, CheckCircle, XCircle, UserCheck, ShieldCheck, FileText } from 'lucide-react';
+import { Plus, AlertCircle, X, UserCheck, ShieldCheck, FileText, Trash2, Edit } from 'lucide-react';
 import DataControls from '../components/DataControls';
 import { AppContext } from '../App';
 
@@ -21,6 +21,9 @@ const Loans: React.FC = () => {
   const [isPenaltyModalOpen, setIsPenaltyModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   // Column Filters
   const [colFilters, setColFilters] = useState({
     employeeName: '',
@@ -37,7 +40,7 @@ const Loans: React.FC = () => {
     reason: ''
   });
   
-  const isAdmin = true;
+  const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.HR_MANAGER;
 
   useEffect(() => { localStorage.setItem('loans_data', JSON.stringify(loans)); }, [loans]);
 
@@ -51,44 +54,110 @@ const Loans: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- Modal Open Handlers ---
+  const handleOpenLoanModal = (loan?: LoanRecord) => {
+      if (loan) {
+          setEditingId(loan.id);
+          setFormData({
+              employeeName: loan.employeeName,
+              amount: loan.amount.toString(),
+              installments: loan.installments?.toString() || '',
+              reason: loan.reason || ''
+          });
+      } else {
+          setEditingId(null);
+          setFormData({ employeeName: currentUser?.role === UserRole.EMPLOYEE ? currentUser.fullName : '', amount: '', installments: '', reason: '' });
+      }
+      setIsLoanModalOpen(true);
+  };
+
+  const handleOpenPenaltyModal = (loan?: LoanRecord) => {
+      if (loan) {
+          setEditingId(loan.id);
+          setFormData({
+              employeeName: loan.employeeName,
+              amount: loan.amount.toString(),
+              installments: '',
+              reason: loan.reason || ''
+          });
+      } else {
+          setEditingId(null);
+          setFormData({ employeeName: '', amount: '', installments: '', reason: '' });
+      }
+      setIsPenaltyModalOpen(true);
+  };
+
+  // --- Submit Handlers ---
   const handleSubmitLoan = (e: React.FormEvent) => {
     e.preventDefault();
-    const newLoan: LoanRecord = {
-      id: `LN-${Date.now()}`,
-      employeeName: currentUser?.role === UserRole.EMPLOYEE ? currentUser.fullName : formData.employeeName,
-      type: 'سلفة',
-      amount: Number(formData.amount),
-      date: new Date().toISOString().split('T')[0],
-      remainingAmount: Number(formData.amount),
-      status: 'pending',
-      requestStatus: 'pending',
-      installments: Number(formData.installments),
-      reason: formData.reason
-    };
-    setLoans([newLoan, ...loans]);
+    if (editingId) {
+        // Edit Existing
+        setLoans(prev => prev.map(l => l.id === editingId ? {
+            ...l,
+            employeeName: formData.employeeName,
+            amount: Number(formData.amount),
+            remainingAmount: Number(formData.amount), // Reset remaining if amount changes? Or assume full edit.
+            installments: Number(formData.installments),
+            reason: formData.reason
+        } : l));
+        addNotification('تعديل سلفة', 'تم تعديل بيانات السلفة بنجاح.');
+    } else {
+        // Create New
+        const newLoan: LoanRecord = {
+            id: `LN-${Date.now()}`,
+            employeeName: currentUser?.role === UserRole.EMPLOYEE ? currentUser.fullName : formData.employeeName,
+            type: 'سلفة',
+            amount: Number(formData.amount),
+            date: new Date().toISOString().split('T')[0],
+            remainingAmount: Number(formData.amount),
+            status: 'pending',
+            requestStatus: 'pending',
+            installments: Number(formData.installments),
+            reason: formData.reason
+        };
+        setLoans([newLoan, ...loans]);
+        addNotification('طلب سلفة', `طلب سلفة جديد من ${newLoan.employeeName}`);
+    }
     setIsLoanModalOpen(false);
-    addNotification('طلب سلفة', `طلب سلفة جديد من ${newLoan.employeeName}`);
     setFormData({ employeeName: '', amount: '', installments: '', reason: '' });
   };
 
   const handleSubmitPenalty = (e: React.FormEvent) => {
     e.preventDefault();
-    const newPenalty: LoanRecord = {
-      id: `PN-${Date.now()}`,
-      employeeName: formData.employeeName,
-      type: 'جزاء',
-      amount: Number(formData.amount),
-      date: new Date().toISOString().split('T')[0],
-      remainingAmount: Number(formData.amount),
-      status: 'active', // Penalties usually active immediately
-      requestStatus: 'approved', // Auto approved if added by Admin
-      approvedBy: currentUser?.fullName,
-      reason: formData.reason
-    };
-    setLoans([newPenalty, ...loans]);
+    if (editingId) {
+        setLoans(prev => prev.map(l => l.id === editingId ? {
+            ...l,
+            employeeName: formData.employeeName,
+            amount: Number(formData.amount),
+            remainingAmount: Number(formData.amount),
+            reason: formData.reason
+        } : l));
+        addNotification('تعديل جزاء', 'تم تعديل بيانات الجزاء بنجاح.');
+    } else {
+        const newPenalty: LoanRecord = {
+            id: `PN-${Date.now()}`,
+            employeeName: formData.employeeName,
+            type: 'جزاء',
+            amount: Number(formData.amount),
+            date: new Date().toISOString().split('T')[0],
+            remainingAmount: Number(formData.amount),
+            status: 'active',
+            requestStatus: 'approved',
+            approvedBy: currentUser?.fullName,
+            reason: formData.reason
+        };
+        setLoans([newPenalty, ...loans]);
+        addNotification('تسجيل جزاء', `تم تسجيل جزاء على الموظف ${newPenalty.employeeName}`);
+    }
     setIsPenaltyModalOpen(false);
-    addNotification('تسجيل جزاء', `تم تسجيل جزاء على الموظف ${newPenalty.employeeName}`);
     setFormData({ employeeName: '', amount: '', installments: '', reason: '' });
+  };
+
+  const handleDelete = (id: string) => {
+      if (window.confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
+          setLoans(prev => prev.filter(l => l.id !== id));
+          addNotification('حذف سجل', 'تم حذف السجل بنجاح.');
+      }
   };
 
   // --- WORKFLOW ---
@@ -110,7 +179,9 @@ const Loans: React.FC = () => {
   };
 
   const handleReject = (id: string) => {
-    setLoans(prev => prev.map(loan => loan.id === id ? { ...loan, requestStatus: 'rejected', status: 'completed' } : loan));
+    if (window.confirm('هل أنت متأكد من رفض الطلب؟')) {
+        setLoans(prev => prev.map(loan => loan.id === id ? { ...loan, requestStatus: 'rejected', status: 'completed' } : loan));
+    }
   };
 
   const filteredRecords = loans.filter(l => {
@@ -154,10 +225,10 @@ const Loans: React.FC = () => {
         </div>
         <div className="flex gap-3 w-full sm:w-auto justify-end">
           {activeTab === 'requests' && (
-             <button onClick={() => setIsLoanModalOpen(true)} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 transition text-sm font-medium"><Plus className="h-4 w-4" /><span>طلب سلفة</span></button>
+             <button onClick={() => handleOpenLoanModal()} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 transition text-sm font-medium"><Plus className="h-4 w-4" /><span>طلب سلفة</span></button>
           )}
           {activeTab === 'penalties' && (
-             <button onClick={() => setIsPenaltyModalOpen(true)} className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-sm hover:bg-red-700 transition text-sm font-medium"><AlertCircle className="h-4 w-4" /><span>تسجيل جزاء</span></button>
+             <button onClick={() => handleOpenPenaltyModal()} className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-sm hover:bg-red-700 transition text-sm font-medium"><AlertCircle className="h-4 w-4" /><span>تسجيل جزاء</span></button>
           )}
         </div>
       </div>
@@ -194,7 +265,7 @@ const Loans: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredRecords.length > 0 ? filteredRecords.map((record) => (
-                  <tr key={record.id} className="hover:bg-indigo-50/30 transition-colors">
+                  <tr key={record.id} className="hover:bg-indigo-50/30 transition-colors group">
                     <td className="px-6 py-4 font-medium text-gray-900">{record.employeeName}</td>
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-xs ${record.type === 'جزاء' ? 'bg-red-100 text-red-800' : 'bg-gray-100'}`}>{record.type}</span></td>
                     <td className="px-6 py-4 font-bold">{record.amount.toLocaleString()} ج.م</td>
@@ -208,19 +279,30 @@ const Loans: React.FC = () => {
                         </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {currentUser?.role !== UserRole.EMPLOYEE && activeTab === 'requests' && (
-                         <div className="flex justify-center gap-2">
-                            {record.requestStatus === 'pending' && (
-                                <button onClick={() => handleReview(record.id)} className="px-2 py-1 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-xs hover:bg-yellow-100">مراجعة</button>
-                            )}
-                            {record.requestStatus === 'reviewed' && (
-                                <button onClick={() => handleApprove(record.id)} className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs hover:bg-green-100 font-bold">اعتماد</button>
-                            )}
-                            {(record.requestStatus === 'pending' || record.requestStatus === 'reviewed') && (
-                                <button onClick={() => handleReject(record.id)} className="p-1 rounded text-red-500 hover:bg-red-50"><XCircle className="h-4 w-4" /></button>
-                            )}
-                         </div>
-                      )}
+                      <div className="flex justify-center gap-2">
+                          {/* Workflow for Admins */}
+                          {isAdmin && record.requestStatus === 'pending' && (
+                              <button onClick={() => handleReview(record.id)} className="p-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-xs hover:bg-yellow-100" title="مراجعة"><UserCheck className="h-4 w-4" /></button>
+                          )}
+                          {isAdmin && record.requestStatus === 'reviewed' && (
+                              <button onClick={() => handleApprove(record.id)} className="p-1.5 bg-green-50 text-green-700 border border-green-200 rounded text-xs hover:bg-green-100 font-bold" title="اعتماد نهائي"><ShieldCheck className="h-4 w-4" /></button>
+                          )}
+                          {isAdmin && (record.requestStatus === 'pending' || record.requestStatus === 'reviewed') && (
+                              <button onClick={() => handleReject(record.id)} className="p-1.5 rounded text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100" title="رفض"><X className="h-4 w-4" /></button>
+                          )}
+
+                          {/* Edit / Delete */}
+                          {(isAdmin || (record.requestStatus === 'pending' && currentUser?.fullName === record.employeeName)) && (
+                              <>
+                                <button onClick={() => record.type === 'سلفة' ? handleOpenLoanModal(record) : handleOpenPenaltyModal(record)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="تعديل">
+                                    <Edit className="h-4 w-4" />
+                                </button>
+                                <button onClick={() => handleDelete(record.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="حذف">
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                          )}
+                      </div>
                     </td>
                   </tr>
                 )) : (
@@ -235,10 +317,10 @@ const Loans: React.FC = () => {
       {isLoanModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6">
-            <div className="flex justify-between mb-4"><h3 className="text-lg font-bold">طلب سلفة</h3><button onClick={() => setIsLoanModalOpen(false)}><X className="h-5 w-5" /></button></div>
+            <div className="flex justify-between mb-4"><h3 className="text-lg font-bold">{editingId ? 'تعديل سلفة' : 'طلب سلفة'}</h3><button onClick={() => setIsLoanModalOpen(false)}><X className="h-5 w-5" /></button></div>
             <form onSubmit={handleSubmitLoan} className="space-y-4">
                 {currentUser?.role !== UserRole.EMPLOYEE && (
-                    <select className="w-full border rounded p-2" value={formData.employeeName} onChange={handleInputChange} name="employeeName">
+                    <select className="w-full border rounded p-2" value={formData.employeeName} onChange={handleInputChange} name="employeeName" disabled={!!editingId}>
                         <option value="">اختر الموظف</option>
                         {MOCK_EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
                     </select>
@@ -247,8 +329,8 @@ const Loans: React.FC = () => {
                 <input type="number" className="w-full border rounded p-2" placeholder="عدد الأقساط" value={formData.installments} onChange={handleInputChange} name="installments" />
                 <textarea className="w-full border rounded p-2" placeholder="السبب" value={formData.reason} onChange={handleInputChange} name="reason" />
                 <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded">تقديم</button>
-                    <button type="button" onClick={() => setIsLoanModalOpen(false)} className="flex-1 border py-2 rounded">إلغاء</button>
+                    <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded font-bold shadow-sm">{editingId ? 'حفظ التغييرات' : 'تقديم'}</button>
+                    <button type="button" onClick={() => setIsLoanModalOpen(false)} className="flex-1 border py-2 rounded hover:bg-gray-50">إلغاء</button>
                 </div>
             </form>
           </div>
@@ -259,17 +341,17 @@ const Loans: React.FC = () => {
       {isPenaltyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6">
-            <div className="flex justify-between mb-4"><h3 className="text-lg font-bold text-red-700">تسجيل جزاء / خصم</h3><button onClick={() => setIsPenaltyModalOpen(false)}><X className="h-5 w-5" /></button></div>
+            <div className="flex justify-between mb-4"><h3 className="text-lg font-bold text-red-700">{editingId ? 'تعديل جزاء' : 'تسجيل جزاء / خصم'}</h3><button onClick={() => setIsPenaltyModalOpen(false)}><X className="h-5 w-5" /></button></div>
             <form onSubmit={handleSubmitPenalty} className="space-y-4">
-                <select className="w-full border rounded p-2" value={formData.employeeName} onChange={handleInputChange} name="employeeName">
+                <select className="w-full border rounded p-2" value={formData.employeeName} onChange={handleInputChange} name="employeeName" disabled={!!editingId}>
                     <option value="">اختر الموظف</option>
                     {MOCK_EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
                 </select>
                 <input type="number" className="w-full border rounded p-2" placeholder="قيمة الخصم" value={formData.amount} onChange={handleInputChange} name="amount" />
                 <textarea className="w-full border rounded p-2" placeholder="سبب الجزاء" value={formData.reason} onChange={handleInputChange} name="reason" />
                 <div className="flex gap-2">
-                    <button type="submit" className="flex-1 bg-red-600 text-white py-2 rounded">تسجيل</button>
-                    <button type="button" onClick={() => setIsPenaltyModalOpen(false)} className="flex-1 border py-2 rounded">إلغاء</button>
+                    <button type="submit" className="flex-1 bg-red-600 text-white py-2 rounded font-bold shadow-sm">{editingId ? 'حفظ التغييرات' : 'تسجيل'}</button>
+                    <button type="button" onClick={() => setIsPenaltyModalOpen(false)} className="flex-1 border py-2 rounded hover:bg-gray-50">إلغاء</button>
                 </div>
             </form>
           </div>
