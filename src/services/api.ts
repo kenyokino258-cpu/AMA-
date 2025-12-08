@@ -1,5 +1,5 @@
 
-import { supabase } from '../supabaseClient';
+import { supabase } from './supabaseClient';
 import { Employee, AttendanceRecord } from '../types';
 
 // Helper to map DB snake_case to App camelCase
