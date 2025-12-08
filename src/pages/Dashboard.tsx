@@ -1,14 +1,15 @@
 
 import React, { useContext, useEffect, useState } from 'react';
-import { Users, UserCheck, AlertCircle, Clock, Calendar, TrendingUp, Wallet, CheckCircle, XCircle, Briefcase, CalendarOff } from 'lucide-react';
+import { Users, UserCheck, Clock, Calendar, Wallet } from 'lucide-react';
 import StatCard from '../components/StatCard';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, 
-  AreaChart, Area, PieChart, Pie, Cell 
+  PieChart, Pie, Cell 
 } from 'recharts';
 import { AppContext } from '../App';
 import { UserRole, Employee, AttendanceRecord, PayrollRecord, LeaveRequest, LeaveBalance } from '../types';
 import { MOCK_EMPLOYEES, MOCK_ATTENDANCE, MOCK_PAYROLL, MOCK_LEAVES, MOCK_LEAVE_BALANCES } from '../constants';
+import { CheckCircle, XCircle, CalendarOff, Briefcase } from 'lucide-react'; // Added missing imports for self-service view
 
 const Dashboard: React.FC = () => {
   const { currentUser } = useContext(AppContext);
@@ -16,8 +17,6 @@ const Dashboard: React.FC = () => {
   // Real Data State
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
-  const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
-  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
 
   // Statistics State
@@ -52,8 +51,6 @@ const Dashboard: React.FC = () => {
 
     setEmployees(loadedEmps);
     setAttendance(loadedAtt);
-    setPayroll(loadedPay);
-    setLeaves(loadedLeaves);
     setBalances(loadedBalances);
 
     // 2. Calculate Stats
