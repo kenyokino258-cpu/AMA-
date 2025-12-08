@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { MOCK_SHIFTS } from '../constants';
 import { Shift } from '../types';
 import { Plus, X, Clock, CalendarDays, Trash2, Edit } from 'lucide-react';
-import DataControls from '../components/DataControls';
 
 const Shifts: React.FC = () => {
   const [shifts, setShifts] = useState<Shift[]>(() => {
