@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_PERFORMANCE_REVIEWS, MOCK_EMPLOYEES } from '../constants';
 import { PerformanceReview, KPI, Employee, UserRole } from '../types';
-import { TrendingUp, Plus, Search, Star, Award, Trash2, Edit, Save, X, CheckCircle, BarChart3 } from 'lucide-react';
+import { Plus, Search, Star, Award, Trash2, Edit, Save, X, CheckCircle, BarChart3 } from 'lucide-react';
 import DataControls from '../components/DataControls';
 import { AppContext } from '../App';
 
@@ -13,7 +13,7 @@ const Performance: React.FC = () => {
     return saved ? JSON.parse(saved) : MOCK_PERFORMANCE_REVIEWS;
   });
 
-  const [employees, setEmployees] = useState<Employee[]>(() => {
+  const [employees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('employees_data');
     return saved ? JSON.parse(saved) : MOCK_EMPLOYEES;
   });
