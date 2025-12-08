@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useContext, createContext, Suspense } from 'react';
-import { MemoryRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Bell, Search, UserCircle, X, LogOut, Lock, Wifi, WifiOff, Loader } from 'lucide-react';
 import { SystemUser, UserRole, Notification, AppContextType, Language, ThemeColor } from './types';
 import { getDeviceId, validateLicenseKey } from './utils/security';
@@ -54,10 +54,10 @@ export const AppContext = createContext<AppContextType>({
 });
 
 const LoadingFallback = () => (
-  <div className="flex h-screen w-full items-center justify-center bg-gray-50" dir="rtl">
+  <div className="flex h-screen w-full items-center justify-center bg-gray-50 dark:bg-gray-900" dir="rtl">
     <div className="flex flex-col items-center gap-4">
-      <Loader className="h-10 w-10 animate-spin text-indigo-600" />
-      <p className="text-sm text-gray-500 animate-pulse">جاري تحميل النظام...</p>
+      <Loader className="h-10 w-10 animate-spin text-indigo-600 dark:text-indigo-400" />
+      <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">جاري تحميل النظام...</p>
     </div>
   </div>
 );
@@ -109,7 +109,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50/50 flex-col transition-colors duration-300 main-app-container">
+    <div className="flex min-h-screen bg-gray-50/50 dark:bg-gray-900 flex-col transition-colors duration-300 main-app-container">
       {!isPaidVersion && !isExpired && (
         <Suspense fallback={null}><TrialBanner daysLeft={trialDaysLeft} /></Suspense>
       )}
@@ -123,7 +123,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       <div className="flex flex-1 relative">
         <div className="no-print z-30">
-          <Suspense fallback={<div className="w-64 bg-white h-full border-r" />}>
+          <Suspense fallback={<div className="w-64 bg-white dark:bg-gray-800 h-full border-r dark:border-gray-700" />}>
             <Sidebar 
                 isOpen={sidebarOpen} 
                 setIsOpen={setSidebarOpen} 
@@ -133,58 +133,58 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
             />
           </Suspense>
         </div>
-        <main className="flex-1 overflow-x-hidden relative w-full">
-          <header className="sticky top-0 z-20 flex h-20 w-full items-center justify-between bg-white px-6 shadow-sm no-print">
+        <main className="flex-1 overflow-x-hidden relative w-full dark:bg-gray-900">
+          <header className="sticky top-0 z-20 flex h-20 w-full items-center justify-between bg-white dark:bg-gray-800 px-6 shadow-sm border-b dark:border-gray-700 no-print transition-colors">
             <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"><Menu className="h-6 w-6" /></button>
+              <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 lg:hidden"><Menu className="h-6 w-6" /></button>
               <div className="hidden md:block relative w-96">
-                <Search className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input type="text" placeholder={t('search')} className={`w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-4 pl-10 rtl:pr-10 rtl:pl-4 text-sm focus:border-${themeColor}-600 focus:bg-white focus:outline-none transition-all`} />
+                <Search className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+                <input type="text" placeholder={t('search')} className={`w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 py-2 pr-4 pl-10 rtl:pr-10 rtl:pl-4 text-sm text-gray-800 dark:text-gray-200 focus:border-${themeColor}-600 dark:focus:border-${themeColor}-500 focus:bg-white dark:focus:bg-gray-900 focus:outline-none transition-all placeholder-gray-400 dark:placeholder-gray-600`} />
               </div>
             </div>
 
             <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${isServerOnline ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${isServerOnline ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'}`}>
                  {isServerOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
                  <span className="text-xs font-bold hidden sm:inline">{isServerOnline ? t('online') : t('offline')}</span>
               </div>
 
-              <div className="h-8 w-px bg-gray-200 mx-1"></div>
+              <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
               <div className="relative">
-                <button onClick={() => { setShowNotifications(!showNotifications); setProfileOpen(false); }} className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100 transition-colors">
+                <button onClick={() => { setShowNotifications(!showNotifications); setProfileOpen(false); }} className="relative rounded-lg p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                   <Bell className="h-6 w-6" />
                   {notifications.filter(n => n.unread).length > 0 && (
-                    <span className="absolute top-2 left-2 rtl:left-auto rtl:right-2 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white"></span>
+                    <span className="absolute top-2 left-2 rtl:left-auto rtl:right-2 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white dark:border-gray-800"></span>
                   )}
                 </button>
                 {showNotifications && (
-                  <div className="absolute left-0 rtl:left-0 rtl:right-auto mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-gray-50/50">
-                      <h3 className="font-bold text-gray-800">الإشعارات ({notifications.length})</h3>
-                      <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+                  <div className="absolute left-0 rtl:left-0 rtl:right-auto mt-3 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-50 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+                      <h3 className="font-bold text-gray-800 dark:text-gray-100">الإشعارات ({notifications.length})</h3>
+                      <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"><X className="h-4 w-4" /></button>
                     </div>
                     <div className="max-h-[300px] overflow-y-auto">
                       {notifications.length > 0 ? notifications.map(notif => (
-                        <div key={notif.id} onClick={() => handleNotificationClick(notif)} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${notif.unread ? `bg-${themeColor}-50` : ''}`}>
-                          <div className="flex justify-between items-start mb-1"><span className={`font-bold text-sm ${notif.unread ? `text-${themeColor}-600` : 'text-gray-700'}`}>{notif.title}</span><span className="text-[10px] text-gray-400">{notif.time}</span></div>
-                          <p className="text-xs text-gray-500">{notif.desc}</p>
+                        <div key={notif.id} onClick={() => handleNotificationClick(notif)} className={`p-4 border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${notif.unread ? `bg-${themeColor}-50 dark:bg-${themeColor}-900/10` : ''}`}>
+                          <div className="flex justify-between items-start mb-1"><span className={`font-bold text-sm ${notif.unread ? `text-${themeColor}-600 dark:text-${themeColor}-400` : 'text-gray-700 dark:text-gray-300'}`}>{notif.title}</span><span className="text-[10px] text-gray-400">{notif.time}</span></div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{notif.desc}</p>
                         </div>
                       )) : <div className="p-8 text-center text-gray-400 text-sm">لا توجد إشعارات جديدة</div>}
                     </div>
                   </div>
                 )}
               </div>
-              <div className="h-8 w-px bg-gray-200 mx-1"></div>
+              <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
               <div className="relative">
-                <div className="flex items-center gap-3 cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors" onClick={() => { setProfileOpen(!profileOpen); setShowNotifications(false); }}>
-                  <div className="text-left rtl:text-right hidden md:block"><p className="text-sm font-bold text-gray-800">{currentUser?.fullName || 'مستخدم'}</p><p className="text-xs text-green-600 font-medium">{currentUser?.role === UserRole.EMPLOYEE ? 'بوابة الموظف' : 'Online'}</p></div>
-                  <UserCircle className="h-10 w-10 text-gray-400" />
+                <div className="flex items-center gap-3 cursor-pointer p-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" onClick={() => { setProfileOpen(!profileOpen); setShowNotifications(false); }}>
+                  <div className="text-left rtl:text-right hidden md:block"><p className="text-sm font-bold text-gray-800 dark:text-gray-200">{currentUser?.fullName || 'مستخدم'}</p><p className="text-xs text-green-600 dark:text-green-400 font-medium">{currentUser?.role === UserRole.EMPLOYEE ? 'بوابة الموظف' : 'Online'}</p></div>
+                  <UserCircle className="h-10 w-10 text-gray-400 dark:text-gray-500" />
                 </div>
                 {profileOpen && (
-                  <div className="absolute left-0 rtl:left-0 rtl:right-auto top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                    <button onClick={handleProfileClick} className="w-full text-right rtl:text-right px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">{t('profile')}</button>
-                    <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"><LogOut className="h-4 w-4" /> {t('logout')}</button>
+                  <div className="absolute left-0 rtl:left-0 rtl:right-auto top-14 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50">
+                    <button onClick={handleProfileClick} className="w-full text-right rtl:text-right px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">{t('profile')}</button>
+                    <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-gray-50 dark:border-gray-700"><LogOut className="h-4 w-4" /> {t('logout')}</button>
                   </div>
                 )}
               </div>
@@ -232,6 +232,13 @@ const App: React.FC = () => {
 
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
+    
+    // Toggle Dark Mode Class
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
 
     const selected = colorMap[themeColor];
     const primaryShade = themeColor === 'slate' ? '800' : '600';
@@ -254,6 +261,12 @@ const App: React.FC = () => {
       .bg-indigo-50 { background-color: ${selected['50']} !important; }
       .text-indigo-700 { color: ${selected[hoverShade]} !important; }
       .hover\\:bg-indigo-700:hover { background-color: ${selected[hoverShade]} !important; }
+      
+      /* Dark mode overrides for dynamic colors */
+      .dark .bg-indigo-50 { background-color: ${selected['900']}33 !important; }
+      .dark .text-indigo-700 { color: ${selected['300']} !important; }
+      .dark .text-indigo-600 { color: ${selected['400']} !important; }
+      .dark .border-indigo-600 { border-color: ${selected['500']} !important; }
     `;
   }, [language, themeColor, themeMode]);
 
