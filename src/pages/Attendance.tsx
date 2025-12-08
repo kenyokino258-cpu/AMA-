@@ -24,12 +24,12 @@ const Attendance: React.FC = () => {
     return (!activeDb || activeDb === 'DB1') ? MOCK_DEVICES : [];
   });
 
-  const [employees, setEmployees] = useState<Employee[]>(() => {
+  const [employees] = useState<Employee[]>(() => {
       const saved = localStorage.getItem('employees_data');
       return saved ? JSON.parse(saved) : MOCK_EMPLOYEES;
   });
 
-  const [shifts, setShifts] = useState<Shift[]>(() => {
+  const [shifts] = useState<Shift[]>(() => {
       const saved = localStorage.getItem('shifts_data');
       return saved ? JSON.parse(saved) : MOCK_SHIFTS;
   });
