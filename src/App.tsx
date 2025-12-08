@@ -1,34 +1,36 @@
 
-import React, { useState, useEffect, useContext, createContext } from 'react';
+import React, { useState, useEffect, useContext, createContext, Suspense } from 'react';
 import { MemoryRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import TrialBanner from './components/TrialBanner';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Employees from './pages/Employees';
-import EmployeeDetails from './pages/EmployeeDetails';
-import Recruitment from './pages/Recruitment';
-import Attendance from './pages/Attendance';
-import Contracts from './pages/Contracts';
-import Insurance from './pages/Insurance';
-import Leaves from './pages/Leaves';
-import Payroll from './pages/Payroll';
-import Loans from './pages/Loans';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import Appearance from './pages/Appearance'; 
-import OrgChart from './pages/OrgChart';
-import Transport from './pages/Transport';
-import Performance from './pages/Performance'; 
-import AdminKeyGenerator from './pages/AdminKeyGenerator';
-import Shifts from './pages/Shifts';
-import { Menu, Bell, Search, UserCircle, X, LogOut, Lock, Wifi, WifiOff } from 'lucide-react';
-import { SystemUser, UserRole, Notification, AppContextType } from './types';
+import { Menu, Bell, Search, UserCircle, X, LogOut, Lock, Wifi, WifiOff, Loader } from 'lucide-react';
+import { SystemUser, UserRole, Notification, AppContextType, Language, ThemeColor } from './types';
 import { getDeviceId, validateLicenseKey } from './utils/security';
 import { api } from './services/api';
-import { translations, Language, ThemeColor } from './translations';
+import { translations } from './translations';
 
-// Default Context
+// --- Lazy Load Components to fix Circular Dependencies ---
+const Sidebar = React.lazy(() => import('./components/Sidebar'));
+const TrialBanner = React.lazy(() => import('./components/TrialBanner'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Employees = React.lazy(() => import('./pages/Employees'));
+const EmployeeDetails = React.lazy(() => import('./pages/EmployeeDetails'));
+const Recruitment = React.lazy(() => import('./pages/Recruitment'));
+const Attendance = React.lazy(() => import('./pages/Attendance'));
+const Contracts = React.lazy(() => import('./pages/Contracts'));
+const Insurance = React.lazy(() => import('./pages/Insurance'));
+const Leaves = React.lazy(() => import('./pages/Leaves'));
+const Payroll = React.lazy(() => import('./pages/Payroll'));
+const Loans = React.lazy(() => import('./pages/Loans'));
+const Reports = React.lazy(() => import('./pages/Reports'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const Appearance = React.lazy(() => import('./pages/Appearance'));
+const OrgChart = React.lazy(() => import('./pages/OrgChart'));
+const Transport = React.lazy(() => import('./pages/Transport'));
+const Performance = React.lazy(() => import('./pages/Performance'));
+const AdminKeyGenerator = React.lazy(() => import('./pages/AdminKeyGenerator'));
+const Shifts = React.lazy(() => import('./pages/Shifts'));
+
+// --- Default Context Values ---
 export const AppContext = createContext<AppContextType>({
   sidebarOpen: false,
   setSidebarOpen: () => {},
@@ -51,12 +53,21 @@ export const AppContext = createContext<AppContextType>({
   t: (key) => key,
 });
 
-const ProtectedRoute = ({ children, isExpired }: { children: React.ReactElement, isExpired: boolean }) => {
+const LoadingFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center bg-gray-50" dir="rtl">
+    <div className="flex flex-col items-center gap-4">
+      <Loader className="h-10 w-10 animate-spin text-indigo-600" />
+      <p className="text-sm text-gray-500 animate-pulse">جاري تحميل النظام...</p>
+    </div>
+  </div>
+);
+
+const ProtectedRoute = ({ children, isExpired }: { children: React.ReactNode, isExpired: boolean }) => {
   const location = useLocation();
   if (isExpired && location.pathname !== '/settings' && location.pathname !== '/license-manager') {
     return <Navigate to="/settings" replace />;
   }
-  return children;
+  return <>{children}</>;
 };
 
 const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -76,7 +87,6 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     themeColor
   } = useContext(AppContext);
 
-  const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -95,21 +105,15 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   const handleNotificationClick = (notif: Notification) => {
       setShowNotifications(false);
-      const title = notif.title.toLowerCase();
-      const desc = notif.desc.toLowerCase();
-      
-      if (title.includes('إجازة') || desc.includes('إجازة')) navigate('/leaves');
-      else if (title.includes('راتب') || desc.includes('راتب')) navigate('/payroll');
-      else if (title.includes('عقد') || desc.includes('عقد')) navigate('/contracts');
-      else if (title.includes('سلفة') || title.includes('جزاء') || desc.includes('سلفة') || desc.includes('جزاء')) navigate('/loans');
-      else if (title.includes('صيانة') || title.includes('مركبة') || desc.includes('صيانة')) navigate('/transport');
-      else if (title.includes('تقييم') || desc.includes('أداء')) navigate('/performance');
-      else navigate('/'); 
+      navigate('/'); 
   };
 
   return (
     <div className="flex min-h-screen bg-gray-50/50 flex-col transition-colors duration-300 main-app-container">
-      {!isPaidVersion && !isExpired && <TrialBanner daysLeft={trialDaysLeft} />}
+      {!isPaidVersion && !isExpired && (
+        <Suspense fallback={null}><TrialBanner daysLeft={trialDaysLeft} /></Suspense>
+      )}
+      
       {isExpired && (
         <div className="bg-red-600 text-white px-4 py-3 text-center font-bold shadow-md z-50 flex items-center justify-center gap-2">
            <Lock className="h-5 w-5" />
@@ -119,33 +123,17 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       <div className="flex flex-1 relative">
         <div className="no-print z-30">
-          <Sidebar 
-            isOpen={sidebarOpen} 
-            setIsOpen={setSidebarOpen} 
-            userPermissions={currentUser?.permissions} 
-            userRole={currentUser?.role}
-            isExpired={isExpired} 
-          />
+          <Suspense fallback={<div className="w-64 bg-white h-full border-r" />}>
+            <Sidebar 
+                isOpen={sidebarOpen} 
+                setIsOpen={setSidebarOpen} 
+                userPermissions={currentUser?.permissions} 
+                userRole={currentUser?.role}
+                isExpired={isExpired} 
+            />
+          </Suspense>
         </div>
         <main className="flex-1 overflow-x-hidden relative w-full">
-          {isExpired && location.pathname !== '/settings' && (
-             <div className="absolute inset-0 bg-gray-100/95 z-50 flex items-center justify-center backdrop-blur-sm">
-                <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md border border-red-200">
-                   <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Lock className="h-10 w-10 text-red-600" />
-                   </div>
-                   <h2 className="text-2xl font-bold text-gray-800 mb-2">النظام مغلق</h2>
-                   <p className="text-gray-500 mb-6">يرجى تجديد الاشتراك.</p>
-                   <button 
-                      onClick={() => navigate('/settings')}
-                      className={`bg-${themeColor}-600 text-white px-6 py-2 rounded-lg hover:opacity-90 transition`}
-                   >
-                      التفعيل
-                   </button>
-                </div>
-             </div>
-          )}
-
           <header className="sticky top-0 z-20 flex h-20 w-full items-center justify-between bg-white px-6 shadow-sm no-print">
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"><Menu className="h-6 w-6" /></button>
@@ -156,9 +144,7 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
             </div>
 
             <div className="flex items-center gap-4">
-              <div 
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${isServerOnline ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}
-              >
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${isServerOnline ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
                  {isServerOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
                  <span className="text-xs font-bold hidden sm:inline">{isServerOnline ? t('online') : t('offline')}</span>
               </div>
@@ -180,17 +166,11 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                     </div>
                     <div className="max-h-[300px] overflow-y-auto">
                       {notifications.length > 0 ? notifications.map(notif => (
-                        <div 
-                            key={notif.id} 
-                            onClick={() => handleNotificationClick(notif)}
-                            className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${notif.unread ? `bg-${themeColor}-50` : ''}`}
-                        >
+                        <div key={notif.id} onClick={() => handleNotificationClick(notif)} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${notif.unread ? `bg-${themeColor}-50` : ''}`}>
                           <div className="flex justify-between items-start mb-1"><span className={`font-bold text-sm ${notif.unread ? `text-${themeColor}-600` : 'text-gray-700'}`}>{notif.title}</span><span className="text-[10px] text-gray-400">{notif.time}</span></div>
                           <p className="text-xs text-gray-500">{notif.desc}</p>
                         </div>
-                      )) : (
-                        <div className="p-8 text-center text-gray-400 text-sm">لا توجد إشعارات جديدة</div>
-                      )}
+                      )) : <div className="p-8 text-center text-gray-400 text-sm">لا توجد إشعارات جديدة</div>}
                     </div>
                   </div>
                 )}
@@ -217,6 +197,15 @@ const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   );
 };
 
+const colorMap: Record<ThemeColor, Record<string, string>> = {
+  indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+  emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' },
+  violet: { 50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95' },
+  rose: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337' },
+  amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f' },
+  slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+};
+
 const App: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -225,9 +214,7 @@ const App: React.FC = () => {
   const [isPaidVersion, setIsPaidVersion] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [isServerOnline, setIsServerOnline] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    { id: 1, title: 'مرحباً بك', desc: 'تم تسجيل الدخول بنجاح للنظام', time: 'الآن', unread: true },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([{ id: 1, title: 'مرحباً بك', desc: 'تم تسجيل الدخول بنجاح للنظام', time: 'الآن', unread: true }]);
 
   const [language, setLanguage] = useState<Language>(() => (localStorage.getItem('language') as Language) || 'ar');
   const [themeColor, setThemeColor] = useState<ThemeColor>(() => (localStorage.getItem('themeColor') as ThemeColor) || 'indigo');
@@ -235,16 +222,7 @@ const App: React.FC = () => {
 
   const t = (key: string) => {
     // @ts-ignore
-    return translations[language][key] || key;
-  };
-
-  const colorMap: Record<ThemeColor, Record<string, string>> = {
-    indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
-    emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' },
-    violet: { 50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95' },
-    rose: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337' },
-    amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f' },
-    slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+    return translations[language]?.[key] || key;
   };
 
   useEffect(() => {
@@ -255,14 +233,11 @@ const App: React.FC = () => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = language;
 
-    const root = document.documentElement;
     const selected = colorMap[themeColor];
     const primaryShade = themeColor === 'slate' ? '800' : '600';
     const hoverShade = themeColor === 'slate' ? '900' : '700';
 
-    root.style.setProperty('--primary-color', selected[primaryShade]);
-    root.style.setProperty('--primary-hover', selected[hoverShade]);
-
+    // Inject dynamic styles
     const styleId = 'dynamic-theme-style';
     let styleTag = document.getElementById(styleId);
     if (!styleTag) {
@@ -272,43 +247,13 @@ const App: React.FC = () => {
     }
     
     styleTag.innerHTML = `
-      :root { --theme-50: ${selected['50']}; --theme-100: ${selected['100']}; --theme-200: ${selected['200']}; --theme-300: ${selected['300']}; --theme-400: ${selected['400']}; --theme-500: ${selected['500']}; --theme-600: ${selected['600']}; --theme-700: ${selected['700']}; --theme-800: ${selected['800']}; --theme-900: ${selected['900']}; }
-      body, .bg-gray-50, .bg-gray-50\\/50, .bg-slate-50 { background-color: var(--theme-50) !important; }
-      ::selection { background-color: var(--theme-200); color: var(--theme-900); }
-      ::-webkit-scrollbar-thumb { background-color: var(--theme-300) !important; }
-      ::-webkit-scrollbar-thumb:hover { background-color: var(--theme-400) !important; }
-      .bg-indigo-50 { background-color: var(--theme-50) !important; }
-      .bg-indigo-100 { background-color: var(--theme-100) !important; }
-      .bg-indigo-500 { background-color: var(--theme-500) !important; }
+      :root { --theme-50: ${selected['50']}; --theme-100: ${selected['100']}; --theme-200: ${selected['200']}; --theme-300: ${selected['300']}; --theme-400: ${selected['400']}; --theme-500: ${selected['500']}; --theme-600: ${selected['600']}; --theme-700: ${selected['700']}; --theme-800: ${selected['800']}; --theme-900: ${selected['900']}; --primary-color: ${selected[primaryShade]}; }
       .bg-indigo-600 { background-color: ${selected[primaryShade]} !important; }
-      .bg-indigo-700 { background-color: ${selected[hoverShade]} !important; }
-      .bg-indigo-800 { background-color: var(--theme-800) !important; }
-      .bg-indigo-900 { background-color: var(--theme-900) !important; }
-      .hover\\:bg-indigo-50:hover { background-color: var(--theme-50) !important; }
-      .hover\\:bg-indigo-100:hover { background-color: var(--theme-100) !important; }
-      .hover\\:bg-indigo-600:hover { background-color: ${selected[hoverShade]} !important; }
-      .hover\\:bg-indigo-700:hover { background-color: var(--theme-800) !important; }
-      .text-indigo-500 { color: var(--theme-500) !important; }
       .text-indigo-600 { color: ${selected[primaryShade]} !important; }
-      .text-indigo-700 { color: ${selected[hoverShade]} !important; }
-      .text-indigo-800 { color: var(--theme-800) !important; }
-      .text-indigo-900 { color: var(--theme-900) !important; }
-      .hover\\:text-indigo-600:hover { color: ${selected[primaryShade]} !important; }
-      .hover\\:text-indigo-700:hover { color: ${selected[hoverShade]} !important; }
-      .group:hover .group-hover\\:text-indigo-600 { color: ${selected[primaryShade]} !important; }
-      .group:hover .group-hover\\:text-indigo-700 { color: ${selected[hoverShade]} !important; }
-      .border-indigo-100 { border-color: var(--theme-100) !important; }
-      .border-indigo-200 { border-color: var(--theme-200) !important; }
-      .border-indigo-500 { border-color: var(--theme-500) !important; }
       .border-indigo-600 { border-color: ${selected[primaryShade]} !important; }
-      .hover\\:border-indigo-200:hover { border-color: var(--theme-200) !important; }
-      .hover\\:border-indigo-300:hover { border-color: var(--theme-300) !important; }
-      .focus\\:ring-indigo-500:focus { --tw-ring-color: var(--theme-500) !important; }
-      .ring-indigo-500 { --tw-ring-color: var(--theme-500) !important; }
-      .from-indigo-600 { --tw-gradient-from: ${selected[primaryShade]} !important; var(--tw-gradient-stops): var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-      .to-indigo-700 { --tw-gradient-to: ${selected[hoverShade]} !important; }
-      .to-indigo-800 { --tw-gradient-to: var(--theme-800) !important; }
-      .to-purple-600 { --tw-gradient-to: var(--theme-500) !important; } 
+      .bg-indigo-50 { background-color: ${selected['50']} !important; }
+      .text-indigo-700 { color: ${selected[hoverShade]} !important; }
+      .hover\\:bg-indigo-700:hover { background-color: ${selected[hoverShade]} !important; }
     `;
   }, [language, themeColor, themeMode]);
 
@@ -399,27 +344,29 @@ const App: React.FC = () => {
   return (
     <AppContext.Provider value={contextValue}>
       <Router>
-        <Routes>
-          <Route path="/license-manager" element={<AdminKeyGenerator />} />
-          <Route path="/" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Dashboard /></MainLayout></ProtectedRoute> : <Login onLogin={handleLogin} />} />
-          <Route path="/employees" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Employees /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/employees/:id" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><EmployeeDetails /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/org-chart" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><OrgChart /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/shifts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Shifts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/recruitment" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Recruitment /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/attendance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Attendance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/contracts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Contracts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/insurance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Insurance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/leaves" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Leaves /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/payroll" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Payroll /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/loans" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Loans /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/reports" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Reports /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/transport" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Transport /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/performance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Performance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
-          <Route path="/appearance" element={currentUser ? <MainLayout><Appearance /></MainLayout> : <Navigate to="/" />} />
-          <Route path="/settings" element={currentUser ? <MainLayout><Settings /></MainLayout> : <Navigate to="/" />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/license-manager" element={<AdminKeyGenerator />} />
+            <Route path="/" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Dashboard /></MainLayout></ProtectedRoute> : <Login onLogin={handleLogin} />} />
+            <Route path="/employees" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Employees /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/employees/:id" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><EmployeeDetails /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/org-chart" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><OrgChart /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/shifts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Shifts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/recruitment" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Recruitment /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/attendance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Attendance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/contracts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Contracts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/insurance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Insurance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/leaves" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Leaves /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/payroll" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Payroll /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/loans" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Loans /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/reports" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Reports /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/transport" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Transport /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/performance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Performance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+            <Route path="/appearance" element={currentUser ? <MainLayout><Appearance /></MainLayout> : <Navigate to="/" />} />
+            <Route path="/settings" element={currentUser ? <MainLayout><Settings /></MainLayout> : <Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </Router>
     </AppContext.Provider>
   );
