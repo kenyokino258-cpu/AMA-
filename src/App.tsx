@@ -1,0 +1,428 @@
+
+import React, { useState, useEffect, useContext, createContext } from 'react';
+import { MemoryRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
+import TrialBanner from './components/TrialBanner';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Employees from './pages/Employees';
+import EmployeeDetails from './pages/EmployeeDetails';
+import Recruitment from './pages/Recruitment';
+import Attendance from './pages/Attendance';
+import Contracts from './pages/Contracts';
+import Insurance from './pages/Insurance';
+import Leaves from './pages/Leaves';
+import Payroll from './pages/Payroll';
+import Loans from './pages/Loans';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import Appearance from './pages/Appearance'; 
+import OrgChart from './pages/OrgChart';
+import Transport from './pages/Transport';
+import Performance from './pages/Performance'; 
+import AdminKeyGenerator from './pages/AdminKeyGenerator';
+import Shifts from './pages/Shifts';
+import { Menu, Bell, Search, UserCircle, X, LogOut, Lock, Wifi, WifiOff } from 'lucide-react';
+import { SystemUser, UserRole, Notification, AppContextType } from './types';
+import { getDeviceId, validateLicenseKey } from './utils/security';
+import { api } from './services/api';
+import { translations, Language, ThemeColor } from './translations';
+
+// Default Context
+export const AppContext = createContext<AppContextType>({
+  sidebarOpen: false,
+  setSidebarOpen: () => {},
+  showNotifications: false,
+  setShowNotifications: () => {},
+  isPaidVersion: false,
+  isExpired: false,
+  trialDaysLeft: 0,
+  notifications: [],
+  addNotification: () => {},
+  handleLogout: () => {},
+  currentUser: null,
+  isServerOnline: false,
+  language: 'ar',
+  setLanguage: () => {},
+  themeColor: 'indigo',
+  setThemeColor: () => {},
+  themeMode: 'light',
+  setThemeMode: () => {},
+  t: (key) => key,
+});
+
+const ProtectedRoute = ({ children, isExpired }: { children: React.ReactElement, isExpired: boolean }) => {
+  const location = useLocation();
+  if (isExpired && location.pathname !== '/settings' && location.pathname !== '/license-manager') {
+    return <Navigate to="/settings" replace />;
+  }
+  return children;
+};
+
+const MainLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    showNotifications,
+    setShowNotifications,
+    isPaidVersion,
+    isExpired,
+    trialDaysLeft,
+    notifications,
+    handleLogout,
+    currentUser,
+    isServerOnline,
+    t,
+    themeColor
+  } = useContext(AppContext);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const handleProfileClick = () => {
+      setProfileOpen(false);
+      if (currentUser?.linkedEmployeeId) {
+          navigate(`/employees/${currentUser.linkedEmployeeId}`);
+      } else {
+          if (currentUser?.role === UserRole.ADMIN) {
+              navigate('/settings');
+          } else {
+              alert('هذا المستخدم غير مرتبط بملف موظف.');
+          }
+      }
+  };
+
+  const handleNotificationClick = (notif: Notification) => {
+      setShowNotifications(false);
+      const title = notif.title.toLowerCase();
+      const desc = notif.desc.toLowerCase();
+      
+      if (title.includes('إجازة') || desc.includes('إجازة')) navigate('/leaves');
+      else if (title.includes('راتب') || desc.includes('راتب')) navigate('/payroll');
+      else if (title.includes('عقد') || desc.includes('عقد')) navigate('/contracts');
+      else if (title.includes('سلفة') || title.includes('جزاء') || desc.includes('سلفة') || desc.includes('جزاء')) navigate('/loans');
+      else if (title.includes('صيانة') || title.includes('مركبة') || desc.includes('صيانة')) navigate('/transport');
+      else if (title.includes('تقييم') || desc.includes('أداء')) navigate('/performance');
+      else navigate('/'); 
+  };
+
+  return (
+    <div className="flex min-h-screen bg-gray-50/50 flex-col transition-colors duration-300 main-app-container">
+      {!isPaidVersion && !isExpired && <TrialBanner daysLeft={trialDaysLeft} />}
+      {isExpired && (
+        <div className="bg-red-600 text-white px-4 py-3 text-center font-bold shadow-md z-50 flex items-center justify-center gap-2">
+           <Lock className="h-5 w-5" />
+           <span>{t('subscription')} منتهي.</span>
+        </div>
+      )}
+
+      <div className="flex flex-1 relative">
+        <div className="no-print z-30">
+          <Sidebar 
+            isOpen={sidebarOpen} 
+            setIsOpen={setSidebarOpen} 
+            userPermissions={currentUser?.permissions} 
+            userRole={currentUser?.role}
+            isExpired={isExpired} 
+          />
+        </div>
+        <main className="flex-1 overflow-x-hidden relative w-full">
+          {isExpired && location.pathname !== '/settings' && (
+             <div className="absolute inset-0 bg-gray-100/95 z-50 flex items-center justify-center backdrop-blur-sm">
+                <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md border border-red-200">
+                   <div className="bg-red-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Lock className="h-10 w-10 text-red-600" />
+                   </div>
+                   <h2 className="text-2xl font-bold text-gray-800 mb-2">النظام مغلق</h2>
+                   <p className="text-gray-500 mb-6">يرجى تجديد الاشتراك.</p>
+                   <button 
+                      onClick={() => navigate('/settings')}
+                      className={`bg-${themeColor}-600 text-white px-6 py-2 rounded-lg hover:opacity-90 transition`}
+                   >
+                      التفعيل
+                   </button>
+                </div>
+             </div>
+          )}
+
+          <header className="sticky top-0 z-20 flex h-20 w-full items-center justify-between bg-white px-6 shadow-sm no-print">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"><Menu className="h-6 w-6" /></button>
+              <div className="hidden md:block relative w-96">
+                <Search className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input type="text" placeholder={t('search')} className={`w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pr-4 pl-10 rtl:pr-10 rtl:pl-4 text-sm focus:border-${themeColor}-600 focus:bg-white focus:outline-none transition-all`} />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div 
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors ${isServerOnline ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}
+              >
+                 {isServerOnline ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
+                 <span className="text-xs font-bold hidden sm:inline">{isServerOnline ? t('online') : t('offline')}</span>
+              </div>
+
+              <div className="h-8 w-px bg-gray-200 mx-1"></div>
+
+              <div className="relative">
+                <button onClick={() => { setShowNotifications(!showNotifications); setProfileOpen(false); }} className="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100 transition-colors">
+                  <Bell className="h-6 w-6" />
+                  {notifications.filter(n => n.unread).length > 0 && (
+                    <span className="absolute top-2 left-2 rtl:left-auto rtl:right-2 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-white"></span>
+                  )}
+                </button>
+                {showNotifications && (
+                  <div className="absolute left-0 rtl:left-0 rtl:right-auto mt-3 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-gray-50/50">
+                      <h3 className="font-bold text-gray-800">الإشعارات ({notifications.length})</h3>
+                      <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notifications.length > 0 ? notifications.map(notif => (
+                        <div 
+                            key={notif.id} 
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${notif.unread ? `bg-${themeColor}-50` : ''}`}
+                        >
+                          <div className="flex justify-between items-start mb-1"><span className={`font-bold text-sm ${notif.unread ? `text-${themeColor}-600` : 'text-gray-700'}`}>{notif.title}</span><span className="text-[10px] text-gray-400">{notif.time}</span></div>
+                          <p className="text-xs text-gray-500">{notif.desc}</p>
+                        </div>
+                      )) : (
+                        <div className="p-8 text-center text-gray-400 text-sm">لا توجد إشعارات جديدة</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="h-8 w-px bg-gray-200 mx-1"></div>
+              <div className="relative">
+                <div className="flex items-center gap-3 cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors" onClick={() => { setProfileOpen(!profileOpen); setShowNotifications(false); }}>
+                  <div className="text-left rtl:text-right hidden md:block"><p className="text-sm font-bold text-gray-800">{currentUser?.fullName || 'مستخدم'}</p><p className="text-xs text-green-600 font-medium">{currentUser?.role === UserRole.EMPLOYEE ? 'بوابة الموظف' : 'Online'}</p></div>
+                  <UserCircle className="h-10 w-10 text-gray-400" />
+                </div>
+                {profileOpen && (
+                  <div className="absolute left-0 rtl:left-0 rtl:right-auto top-14 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <button onClick={handleProfileClick} className="w-full text-right rtl:text-right px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">{t('profile')}</button>
+                    <button onClick={handleLogout} className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50"><LogOut className="h-4 w-4" /> {t('logout')}</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+          <div className="p-6">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+const App: React.FC = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [currentUser, setCurrentUser] = useState<SystemUser | null>(null);
+  const [trialDaysLeft, setTrialDaysLeft] = useState(14);
+  const [isPaidVersion, setIsPaidVersion] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
+  const [isServerOnline, setIsServerOnline] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: 1, title: 'مرحباً بك', desc: 'تم تسجيل الدخول بنجاح للنظام', time: 'الآن', unread: true },
+  ]);
+
+  const [language, setLanguage] = useState<Language>(() => (localStorage.getItem('language') as Language) || 'ar');
+  const [themeColor, setThemeColor] = useState<ThemeColor>(() => (localStorage.getItem('themeColor') as ThemeColor) || 'indigo');
+  const [themeMode, setThemeMode] = useState<'light'|'dark'>(() => (localStorage.getItem('themeMode') as 'light'|'dark') || 'light');
+
+  const t = (key: string) => {
+    // @ts-ignore
+    return translations[language][key] || key;
+  };
+
+  const colorMap: Record<ThemeColor, Record<string, string>> = {
+    indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+    emerald: { 50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b' },
+    violet: { 50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95' },
+    rose: { 50: '#fff1f2', 100: '#ffe4e6', 200: '#fecdd3', 300: '#fda4af', 400: '#fb7185', 500: '#f43f5e', 600: '#e11d48', 700: '#be123c', 800: '#9f1239', 900: '#881337' },
+    amber: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f' },
+    slate: { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a' }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+    localStorage.setItem('themeColor', themeColor);
+    localStorage.setItem('themeMode', themeMode);
+
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = language;
+
+    const root = document.documentElement;
+    const selected = colorMap[themeColor];
+    const primaryShade = themeColor === 'slate' ? '800' : '600';
+    const hoverShade = themeColor === 'slate' ? '900' : '700';
+
+    root.style.setProperty('--primary-color', selected[primaryShade]);
+    root.style.setProperty('--primary-hover', selected[hoverShade]);
+
+    const styleId = 'dynamic-theme-style';
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+    
+    styleTag.innerHTML = `
+      :root { --theme-50: ${selected['50']}; --theme-100: ${selected['100']}; --theme-200: ${selected['200']}; --theme-300: ${selected['300']}; --theme-400: ${selected['400']}; --theme-500: ${selected['500']}; --theme-600: ${selected['600']}; --theme-700: ${selected['700']}; --theme-800: ${selected['800']}; --theme-900: ${selected['900']}; }
+      body, .bg-gray-50, .bg-gray-50\\/50, .bg-slate-50 { background-color: var(--theme-50) !important; }
+      ::selection { background-color: var(--theme-200); color: var(--theme-900); }
+      ::-webkit-scrollbar-thumb { background-color: var(--theme-300) !important; }
+      ::-webkit-scrollbar-thumb:hover { background-color: var(--theme-400) !important; }
+      .bg-indigo-50 { background-color: var(--theme-50) !important; }
+      .bg-indigo-100 { background-color: var(--theme-100) !important; }
+      .bg-indigo-500 { background-color: var(--theme-500) !important; }
+      .bg-indigo-600 { background-color: ${selected[primaryShade]} !important; }
+      .bg-indigo-700 { background-color: ${selected[hoverShade]} !important; }
+      .bg-indigo-800 { background-color: var(--theme-800) !important; }
+      .bg-indigo-900 { background-color: var(--theme-900) !important; }
+      .hover\\:bg-indigo-50:hover { background-color: var(--theme-50) !important; }
+      .hover\\:bg-indigo-100:hover { background-color: var(--theme-100) !important; }
+      .hover\\:bg-indigo-600:hover { background-color: ${selected[hoverShade]} !important; }
+      .hover\\:bg-indigo-700:hover { background-color: var(--theme-800) !important; }
+      .text-indigo-500 { color: var(--theme-500) !important; }
+      .text-indigo-600 { color: ${selected[primaryShade]} !important; }
+      .text-indigo-700 { color: ${selected[hoverShade]} !important; }
+      .text-indigo-800 { color: var(--theme-800) !important; }
+      .text-indigo-900 { color: var(--theme-900) !important; }
+      .hover\\:text-indigo-600:hover { color: ${selected[primaryShade]} !important; }
+      .hover\\:text-indigo-700:hover { color: ${selected[hoverShade]} !important; }
+      .group:hover .group-hover\\:text-indigo-600 { color: ${selected[primaryShade]} !important; }
+      .group:hover .group-hover\\:text-indigo-700 { color: ${selected[hoverShade]} !important; }
+      .border-indigo-100 { border-color: var(--theme-100) !important; }
+      .border-indigo-200 { border-color: var(--theme-200) !important; }
+      .border-indigo-500 { border-color: var(--theme-500) !important; }
+      .border-indigo-600 { border-color: ${selected[primaryShade]} !important; }
+      .hover\\:border-indigo-200:hover { border-color: var(--theme-200) !important; }
+      .hover\\:border-indigo-300:hover { border-color: var(--theme-300) !important; }
+      .focus\\:ring-indigo-500:focus { --tw-ring-color: var(--theme-500) !important; }
+      .ring-indigo-500 { --tw-ring-color: var(--theme-500) !important; }
+      .from-indigo-600 { --tw-gradient-from: ${selected[primaryShade]} !important; var(--tw-gradient-stops): var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+      .to-indigo-700 { --tw-gradient-to: ${selected[hoverShade]} !important; }
+      .to-indigo-800 { --tw-gradient-to: var(--theme-800) !important; }
+      .to-purple-600 { --tw-gradient-to: var(--theme-500) !important; } 
+    `;
+  }, [language, themeColor, themeMode]);
+
+  const addNotification = (title: string, desc: string) => {
+    const newNotif: Notification = { id: Date.now(), title, desc, time: 'الآن', unread: true };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const res = await api.checkHealth();
+        setIsServerOnline(res.status === 'ok');
+      } catch (e) {
+        setIsServerOnline(false);
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 15000); 
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const validateSubscription = () => {
+        const storedUser = localStorage.getItem('currentUser');
+        const trialStart = localStorage.getItem('trialStart');
+        const storedLicenseKey = localStorage.getItem('licenseKey');
+        const deviceId = getDeviceId();
+        
+        let paidValid = false;
+        let isNowExpired = false;
+
+        if (storedLicenseKey) {
+           const validation = validateLicenseKey(storedLicenseKey, deviceId);
+           if (validation.isValid) {
+              setIsPaidVersion(true);
+              paidValid = true;
+              if (validation.expiryDate) {
+                 const today = new Date();
+                 today.setHours(0, 0, 0, 0);
+                 const expDate = new Date(validation.expiryDate);
+                 if (today > expDate) isNowExpired = true;
+              }
+           } else {
+              setIsPaidVersion(false);
+           }
+        } else {
+           setIsPaidVersion(false);
+        }
+
+        if (!paidValid) {
+            if (!trialStart) {
+               localStorage.setItem('trialStart', new Date().toISOString());
+               setTrialDaysLeft(14);
+            } else {
+               const startDate = new Date(trialStart);
+               const today = new Date();
+               const diffTime = Math.abs(today.getTime() - startDate.getTime());
+               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+               const left = 14 - diffDays;
+               setTrialDaysLeft(left);
+               if (left <= 0) isNowExpired = true;
+            }
+        }
+
+        setIsExpired(isNowExpired);
+        if (storedUser) setCurrentUser(JSON.parse(storedUser));
+    };
+
+    validateSubscription();
+    window.addEventListener('focus', validateSubscription);
+    return () => window.removeEventListener('focus', validateSubscription);
+  }, []);
+
+  const handleLogin = (user: SystemUser) => {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    setCurrentUser(user);
+    if (!localStorage.getItem('trialStart')) localStorage.setItem('trialStart', new Date().toISOString());
+  };
+
+  const handleLogout = () => { localStorage.removeItem('currentUser'); setCurrentUser(null); };
+
+  const contextValue: AppContextType = {
+    sidebarOpen, setSidebarOpen, showNotifications, setShowNotifications, isPaidVersion, isExpired, trialDaysLeft, notifications, addNotification, handleLogout, currentUser, isServerOnline,
+    language, setLanguage, themeColor, setThemeColor, themeMode, setThemeMode, t
+  };
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      <Router>
+        <Routes>
+          <Route path="/license-manager" element={<AdminKeyGenerator />} />
+          <Route path="/" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Dashboard /></MainLayout></ProtectedRoute> : <Login onLogin={handleLogin} />} />
+          <Route path="/employees" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Employees /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/employees/:id" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><EmployeeDetails /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/org-chart" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><OrgChart /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/shifts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Shifts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/recruitment" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Recruitment /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/attendance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Attendance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/contracts" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Contracts /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/insurance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Insurance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/leaves" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Leaves /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/payroll" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Payroll /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/loans" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Loans /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/reports" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Reports /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/transport" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Transport /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/performance" element={currentUser ? <ProtectedRoute isExpired={isExpired}><MainLayout><Performance /></MainLayout></ProtectedRoute> : <Navigate to="/" />} />
+          <Route path="/appearance" element={currentUser ? <MainLayout><Appearance /></MainLayout> : <Navigate to="/" />} />
+          <Route path="/settings" element={currentUser ? <MainLayout><Settings /></MainLayout> : <Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AppContext.Provider>
+  );
+};
+
+export default App;

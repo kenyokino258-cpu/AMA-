@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد تراخيص النظام</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
+        <div class="text-center mb-8">
+            <div class="bg-indigo-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-bold">مولد التراخيص المستقل</h1>
+            <p class="text-slate-400 text-sm mt-2">أداة توليد أكواد التفعيل لنظام HR</p>
+        </div>
+
+        <form id="generatorForm" class="space-y-6">
+            <div>
+                <label class="block text-slate-300 text-sm font-medium mb-2">رقم جهاز العميل (Device ID)</label>
+                <input type="text" id="deviceId" required placeholder="XXXX-XXXX-XXXX" class="w-full bg-slate-950 border border-slate-600 text-white font-mono text-center rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none uppercase tracking-wider">
+            </div>
+
+            <div>
+                <label class="block text-slate-300 text-sm font-medium mb-2">مدة الصلاحية</label>
+                <select id="duration" class="w-full bg-slate-950 border border-slate-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="1">يوم واحد</option>
+                    <option value="30">شهر واحد</option>
+                    <option value="90">3 أشهر</option>
+                    <option value="180">6 أشهر</option>
+                    <option value="365" selected>سنة واحدة</option>
+                    <option value="730">سنتين</option>
+                    <option value="3650">مدى الحياة</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-colors shadow-lg">توليد الكود</button>
+        </form>
+
+        <div id="resultArea" class="hidden mt-8 pt-6 border-t border-slate-700 text-center">
+            <p class="text-slate-400 text-sm mb-2">كود التفعيل الناتج:</p>
+            <div id="generatedKey" class="text-xl font-mono font-bold text-green-400 tracking-widest break-all select-all bg-slate-950 p-4 rounded-lg border border-slate-600 mb-4"></div>
+            <button onclick="copyKey()" class="text-sm text-indigo-400 hover:text-indigo-300 font-medium">نسخ الكود</button>
+        </div>
+    </div>
+
+    <script>
+        // Must match the secret in your React App (utils/security.ts)
+        const SECRET_SALT = "NIZAM_HR_SECRET_2025";
+
+        const dateToHex = (days) => days.toString(16).toUpperCase();
+
+        function generateKey(deviceId, duration) {
+            const today = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+            const expiryDays = today + parseInt(duration);
+            const expiryHex = dateToHex(expiryDays);
+
+            const combo = deviceId + expiryHex + SECRET_SALT;
+            let hash = 0;
+            for (let i = 0; i < combo.length; i++) {
+                const char = combo.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            const signature = Math.abs(hash).toString(16).toUpperCase().padEnd(8, 'X');
+            return `NZM-${expiryHex}-${signature}`;
+        }
+
+        document.getElementById('generatorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const deviceId = document.getElementById('deviceId').value.trim();
+            const duration = document.getElementById('duration').value;
+
+            if(deviceId.length < 5) {
+                alert('الرجاء إدخال رقم جهاز صحيح');
+                return;
+            }
+
+            const key = generateKey(deviceId, duration);
+            document.getElementById('generatedKey').innerText = key;
+            document.getElementById('resultArea').classList.remove('hidden');
+        });
+
+        function copyKey() {
+            const key = document.getElementById('generatedKey').innerText;
+            navigator.clipboard.writeText(key).then(() => {
+                alert('تم نسخ الكود');
+            });
+        }
+    </script>
+</body>
+</html>
