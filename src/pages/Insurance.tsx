@@ -1,11 +1,12 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_INSURANCE, MOCK_EMPLOYEES } from '../constants';
-import { InsuranceRecord, Employee } from '../types';
-import { ShieldCheck, Plus, ExternalLink, Search, DollarSign, Users, FileSearch, X, AlertCircle, Save } from 'lucide-react';
+import { InsuranceRecord, Employee, UserRole } from '../types';
+import { ShieldCheck, Plus, ExternalLink, Search, DollarSign, Users, FileSearch, X, AlertCircle, Save, Trash2, Edit } from 'lucide-react';
 import DataControls from '../components/DataControls';
+import { AppContext } from '../App';
 
 const Insurance: React.FC = () => {
+  const { currentUser, addNotification } = useContext(AppContext);
   const [insuranceData, setInsuranceData] = useState<InsuranceRecord[]>(() => {
     const saved = localStorage.getItem('insurance_data');
     if (saved) return JSON.parse(saved);
@@ -14,7 +15,7 @@ const Insurance: React.FC = () => {
   });
 
   // Load employees for the dropdown
-  const [employees, setEmployees] = useState<Employee[]>(() => {
+  const [employees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('employees_data');
     if (saved) return JSON.parse(saved);
     const activeDb = localStorage.getItem('active_db_id');
@@ -38,8 +39,9 @@ const Insurance: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<InsuranceRecord | null>(null);
   
-  // Add Form State
-  const [newRecord, setNewRecord] = useState({
+  // Add/Edit Form State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [recordForm, setRecordForm] = useState({
     employeeName: '',
     insuranceNumber: '',
     salaryInsured: 0,
@@ -52,7 +54,7 @@ const Insurance: React.FC = () => {
   const [queryResult, setQueryResult] = useState<InsuranceRecord | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const isAdmin = true;
+  const isAdmin = currentUser?.role === UserRole.ADMIN || currentUser?.role === UserRole.HR_MANAGER;
 
   // Persist
   useEffect(() => {
@@ -92,7 +94,7 @@ const Insurance: React.FC = () => {
   // Calculations for Add Form
   const handleSalaryChange = (value: string) => {
     const salary = Number(value);
-    setNewRecord(prev => ({
+    setRecordForm(prev => ({
       ...prev,
       salaryInsured: salary,
       companyShare: Math.round(salary * 0.1875), // Approx 18.75%
@@ -100,21 +102,59 @@ const Insurance: React.FC = () => {
     }));
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleOpenModal = (record?: InsuranceRecord) => {
+      if (record) {
+          setEditingId(record.id);
+          setRecordForm({
+              employeeName: record.employeeName,
+              insuranceNumber: record.insuranceNumber,
+              salaryInsured: record.salaryInsured,
+              companyShare: record.companyShare,
+              employeeShare: record.employeeShare
+          });
+      } else {
+          setEditingId(null);
+          setRecordForm({ employeeName: '', insuranceNumber: '', salaryInsured: 0, companyShare: 0, employeeShare: 0 });
+      }
+      setIsAddModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+      if (window.confirm('هل أنت متأكد من حذف هذا السجل التأميني؟')) {
+          setInsuranceData(prev => prev.filter(r => r.id !== id));
+          addNotification('حذف سجل', 'تم حذف السجل التأميني بنجاح');
+      }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const record: InsuranceRecord = {
-      id: `INS-${Date.now()}`,
-      employeeName: newRecord.employeeName,
-      insuranceNumber: newRecord.insuranceNumber,
-      salaryInsured: newRecord.salaryInsured,
-      companyShare: newRecord.companyShare,
-      employeeShare: newRecord.employeeShare,
-      status: 'active'
-    };
-    setInsuranceData([...insuranceData, record]);
+    
+    if (editingId) {
+        setInsuranceData(prev => prev.map(r => r.id === editingId ? {
+            ...r,
+            employeeName: recordForm.employeeName,
+            insuranceNumber: recordForm.insuranceNumber,
+            salaryInsured: recordForm.salaryInsured,
+            companyShare: recordForm.companyShare,
+            employeeShare: recordForm.employeeShare
+        } : r));
+        addNotification('تعديل سجل', 'تم تحديث البيانات التأمينية بنجاح');
+    } else {
+        const record: InsuranceRecord = {
+            id: `INS-${Date.now()}`,
+            employeeName: recordForm.employeeName,
+            insuranceNumber: recordForm.insuranceNumber,
+            salaryInsured: recordForm.salaryInsured,
+            companyShare: recordForm.companyShare,
+            employeeShare: recordForm.employeeShare,
+            status: 'active'
+        };
+        setInsuranceData([...insuranceData, record]);
+        addNotification('إضافة سجل', 'تم إضافة المؤمن عليه بنجاح');
+    }
+    
     setIsAddModalOpen(false);
-    setNewRecord({ employeeName: '', insuranceNumber: '', salaryInsured: 0, companyShare: 0, employeeShare: 0 });
-    alert('تم إضافة المؤمن عليه بنجاح');
+    setRecordForm({ employeeName: '', insuranceNumber: '', salaryInsured: 0, companyShare: 0, employeeShare: 0 });
   };
 
   return (
@@ -151,13 +191,15 @@ const Insurance: React.FC = () => {
             <FileSearch className="h-5 w-5 text-gray-500" />
             <span>استعلام</span>
           </button>
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-white shadow-md hover:bg-indigo-700 transition-all hover:shadow-lg active:scale-95"
-          >
-            <Plus className="h-5 w-5" />
-            <span>إضافة مؤمن عليه</span>
-          </button>
+          {isAdmin && (
+            <button 
+                onClick={() => handleOpenModal()}
+                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-white shadow-md hover:bg-indigo-700 transition-all hover:shadow-lg active:scale-95"
+            >
+                <Plus className="h-5 w-5" />
+                <span>إضافة مؤمن عليه</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -207,7 +249,7 @@ const Insurance: React.FC = () => {
                 <th className="px-6 py-4 font-semibold">حصة الشركة</th>
                 <th className="px-6 py-4 font-semibold">حصة الموظف</th>
                 <th className="px-6 py-4 font-semibold">الحالة</th>
-                <th className="px-6 py-4 font-semibold text-center">التفاصيل</th>
+                <th className="px-6 py-4 font-semibold text-center">الإجراءات</th>
               </tr>
               {/* Filter Row */}
               <tr className="bg-gray-50 border-b border-gray-100">
@@ -241,7 +283,7 @@ const Insurance: React.FC = () => {
                 <th className="px-6 py-2">
                   <input 
                     type="text" 
-                    placeholder="حصة الشركة..." 
+                    placeholder="الشركة..." 
                     className="w-full text-xs p-1.5 border border-gray-300 rounded focus:border-indigo-500 focus:outline-none"
                     value={colFilters.companyShare}
                     onChange={(e) => setColFilters({...colFilters, companyShare: e.target.value})}
@@ -250,7 +292,7 @@ const Insurance: React.FC = () => {
                 <th className="px-6 py-2">
                   <input 
                     type="text" 
-                    placeholder="حصة الموظف..." 
+                    placeholder="الموظف..." 
                     className="w-full text-xs p-1.5 border border-gray-300 rounded focus:border-indigo-500 focus:outline-none"
                     value={colFilters.employeeShare}
                     onChange={(e) => setColFilters({...colFilters, employeeShare: e.target.value})}
@@ -292,12 +334,16 @@ const Insurance: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
-                       <button 
-                          onClick={() => setSelectedRecord(record)}
-                          className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg transition-all"
-                       >
-                          <ExternalLink className="h-4 w-4" />
-                       </button>
+                       <div className="flex justify-center gap-2">
+                           <button onClick={() => handleOpenModal(record)} className="text-indigo-600 hover:bg-indigo-50 p-1.5 rounded" title="تعديل">
+                               <Edit className="h-4 w-4" />
+                           </button>
+                           {isAdmin && (
+                               <button onClick={() => handleDelete(record.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded" title="حذف">
+                                   <Trash2 className="h-4 w-4" />
+                               </button>
+                           )}
+                       </div>
                     </td>
                   </tr>
                 ))
@@ -315,139 +361,6 @@ const Insurance: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {/* Details Modal */}
-      {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
-              <div className="flex items-center justify-between border-b border-gray-100 p-6 bg-gray-50 rounded-t-2xl">
-                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-indigo-600" />
-                    تفاصيل الملف التأميني
-                 </h3>
-                 <button onClick={() => setSelectedRecord(null)} className="rounded-full p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700"><X className="h-5 w-5" /></button>
-              </div>
-              <div className="p-6">
-                 <div className="text-center mb-6">
-                    <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3 text-indigo-600 font-bold text-xl">
-                       {selectedRecord.employeeName.charAt(0)}
-                    </div>
-                    <h4 className="text-lg font-bold text-gray-900">{selectedRecord.employeeName}</h4>
-                    <p className="text-gray-500 font-mono text-sm">#{selectedRecord.insuranceNumber}</p>
-                 </div>
-                 
-                 <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100 mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                       <span className="text-gray-600">الأجر التأميني الأساسي</span>
-                       <span className="font-bold text-lg text-gray-900">{selectedRecord.salaryInsured.toLocaleString()} ج.م</span>
-                    </div>
-                    <div className="h-px bg-indigo-200 my-2"></div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                       <div>
-                          <span className="block text-gray-500 text-xs mb-1">حصة الشركة (18.75%)</span>
-                          <span className="font-bold text-indigo-700">{selectedRecord.companyShare} ج.م</span>
-                       </div>
-                       <div>
-                          <span className="block text-gray-500 text-xs mb-1">حصة الموظف (11%)</span>
-                          <span className="font-bold text-indigo-700">{selectedRecord.employeeShare} ج.م</span>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="flex justify-between items-center text-sm text-gray-500 px-2">
-                    <span>إجمالي التوريد الشهري للهيئة:</span>
-                    <span className="font-bold text-gray-900">{(selectedRecord.companyShare + selectedRecord.employeeShare).toLocaleString()} ج.م</span>
-                 </div>
-              </div>
-              <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end rounded-b-2xl">
-                 <button onClick={() => setSelectedRecord(null)} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-100">إغلاق</button>
-              </div>
-           </div>
-        </div>
-      )}
-
-      {/* Add Insured Person Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-              <div className="flex items-center justify-between border-b border-gray-100 p-6 bg-gray-50 rounded-t-2xl">
-                 <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                    <Plus className="h-5 w-5 text-indigo-600" />
-                    إضافة مؤمن عليه جديد
-                 </h3>
-                 <button onClick={() => setIsAddModalOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-700"><X className="h-5 w-5" /></button>
-              </div>
-              
-              <form onSubmit={handleAddSubmit} className="p-6 overflow-y-auto">
-                 <div className="space-y-4">
-                    <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">الموظف</label>
-                       <select 
-                          required
-                          className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:outline-none"
-                          value={newRecord.employeeName}
-                          onChange={(e) => setNewRecord({...newRecord, employeeName: e.target.value})}
-                       >
-                          <option value="">اختر الموظف...</option>
-                          {employees.map(emp => (
-                             <option key={emp.id} value={emp.name}>{emp.name} - {emp.employeeCode}</option>
-                          ))}
-                       </select>
-                    </div>
-
-                    <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">الرقم التأميني</label>
-                       <input 
-                          type="text" 
-                          required
-                          className="w-full rounded-lg border border-gray-300 p-2.5 text-sm focus:border-indigo-500 focus:outline-none font-mono"
-                          placeholder="xxxxxxxx"
-                          value={newRecord.insuranceNumber}
-                          onChange={(e) => setNewRecord({...newRecord, insuranceNumber: e.target.value})}
-                       />
-                    </div>
-
-                    <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-1">الأجر التأميني</label>
-                       <div className="relative">
-                          <input 
-                             type="number" 
-                             required
-                             min="0"
-                             className="w-full rounded-lg border border-gray-300 p-2.5 pl-10 text-sm focus:border-indigo-500 focus:outline-none font-bold"
-                             value={newRecord.salaryInsured}
-                             onChange={(e) => handleSalaryChange(e.target.value)}
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">ج.م</span>
-                       </div>
-                    </div>
-
-                    {/* Auto Calculated Fields */}
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 grid grid-cols-2 gap-4">
-                       <div>
-                          <label className="block text-xs text-gray-500 mb-1">حصة الشركة (18.75%)</label>
-                          <div className="font-bold text-indigo-700">{newRecord.companyShare.toLocaleString()} ج.م</div>
-                       </div>
-                       <div>
-                          <label className="block text-xs text-gray-500 mb-1">حصة الموظف (11%)</label>
-                          <div className="font-bold text-indigo-700">{newRecord.employeeShare.toLocaleString()} ج.م</div>
-                       </div>
-                    </div>
-                 </div>
-
-                 <div className="pt-6 flex gap-3">
-                    <button type="submit" className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg font-medium hover:bg-indigo-700 flex items-center justify-center gap-2">
-                       <Save className="h-4 w-4" />
-                       حفظ البيانات
-                    </button>
-                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 bg-white border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50">
-                       إلغاء
-                    </button>
-                 </div>
-              </form>
-           </div>
-        </div>
-      )}
 
       {/* Query Modal */}
       {isQueryModalOpen && (
@@ -524,6 +437,73 @@ const Insurance: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                 <h3 className="font-bold text-gray-800">{editingId ? 'تعديل بيانات تأمينية' : 'إضافة مؤمن عليه'}</h3>
+                 <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الموظف</label>
+                    <select 
+                        required 
+                        className="w-full p-2.5 rounded-lg border border-gray-300"
+                        value={recordForm.employeeName}
+                        onChange={(e) => setRecordForm({...recordForm, employeeName: e.target.value})}
+                    >
+                        <option value="">اختر الموظف...</option>
+                        {employees.map(emp => (
+                            <option key={emp.id} value={emp.name}>{emp.name}</option>
+                        ))}
+                    </select>
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الرقم التأميني</label>
+                    <input 
+                        type="text" required 
+                        className="w-full p-2.5 rounded-lg border border-gray-300 font-mono"
+                        value={recordForm.insuranceNumber}
+                        onChange={(e) => setRecordForm({...recordForm, insuranceNumber: e.target.value})}
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">الأجر التأميني</label>
+                    <input 
+                        type="number" required 
+                        className="w-full p-2.5 rounded-lg border border-gray-300"
+                        value={recordForm.salaryInsured}
+                        onChange={(e) => handleSalaryChange(e.target.value)}
+                    />
+                 </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">حصة الشركة (18.75%)</label>
+                        <input 
+                            type="number" readOnly
+                            className="w-full p-2.5 rounded-lg border border-gray-300 bg-gray-50"
+                            value={recordForm.companyShare}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">حصة الموظف (11%)</label>
+                        <input 
+                            type="number" readOnly
+                            className="w-full p-2.5 rounded-lg border border-gray-300 bg-gray-50"
+                            value={recordForm.employeeShare}
+                        />
+                    </div>
+                 </div>
+                 <button type="submit" className="w-full bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 transition mt-2">
+                    {editingId ? 'حفظ التعديلات' : 'حفظ البيانات'}
+                 </button>
+              </form>
+           </div>
         </div>
       )}
     </div>
