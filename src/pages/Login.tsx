@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Users, ArrowLeft, CheckCircle, PlayCircle, Lock, User } from 'lucide-react';
+import { Users, ArrowLeft, CheckCircle, Lock, User } from 'lucide-react';
 import { MOCK_USERS } from '../constants';
 import { SystemUser } from '../types';
 
