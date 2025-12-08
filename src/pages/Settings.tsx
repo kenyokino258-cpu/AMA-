@@ -4,7 +4,7 @@ import { MOCK_USERS, MOCK_DATABASES, MOCK_EMPLOYEES, DEFAULT_ROLES, DEPARTMENTS 
 import { SystemUser, SystemDatabase, UserRole, Employee, RoleDefinition, PayrollConfig, PublicHoliday, SystemDefinition } from '../types';
 import { getDeviceId, validateLicenseKey } from '../utils/security';
 import { 
-  Users, Database, Lock, Plus, Trash2, CheckCircle, XCircle, Search, Key, Shield, Save, Server, CreditCard, RotateCcw, Copy, HardDrive, Download, Upload, FileJson, AlertTriangle, Building2, Image as ImageIcon, CheckSquare, Square, Edit, Star, Wifi, Power, Loader, UserCheck, Briefcase, Network, DollarSign, Calendar, ListChecks, FileText, Box
+  Users, Database, Lock, Plus, Trash2, CheckCircle, XCircle, Key, Shield, Save, Server, CreditCard, RotateCcw, Copy, HardDrive, Download, Upload, FileJson, AlertTriangle, Building2, Image as ImageIcon, CheckSquare, Square, Edit, Star, UserCheck, Briefcase, Network, DollarSign, Calendar, ListChecks, FileText, Box
 } from 'lucide-react';
 import { AppContext } from '../App';
 
