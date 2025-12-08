@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { generateLicenseKey } from '../utils/security';
-import { Shield, Lock, Key, Copy, Check, Terminal, CalendarClock } from 'lucide-react';
+import { Shield, Lock, Copy, Check, Terminal, CalendarClock } from 'lucide-react';
 
 const AdminKeyGenerator: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
