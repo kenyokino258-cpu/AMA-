@@ -32,7 +32,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, userPermissions, userRole, isExpired }) => {
-  const { t, themeColor, language } = useContext(AppContext);
+  const { t, language } = useContext(AppContext);
   const location = useLocation();
   const navigate = useNavigate();
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
