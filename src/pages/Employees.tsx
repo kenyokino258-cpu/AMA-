@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DEPARTMENTS as DEFAULT_DEPTS, MOCK_SHIFTS, MOCK_JOB_TITLES } from '../constants';
-import { Search, Plus, Filter, MoreVertical, FileText, User, CreditCard, CalendarOff, Contact, X, Printer, QrCode, Trash2, Save, Building2, Clock, RefreshCw, LayoutGrid, List, CheckSquare, Briefcase, UserCheck, Shield, Edit, Phone, Mail, MapPin } from 'lucide-react';
+import { Search, Plus, Filter, List, Trash2, Save, RefreshCw, LayoutGrid, Edit, Phone, Mail } from 'lucide-react';
 import { Employee, EmploymentType, Shift, SystemDefinition } from '../types';
 import DataControls from '../components/DataControls';
 import { api } from '../services/api'; 
@@ -13,17 +13,17 @@ const Employees: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [shifts, setShifts] = useState<Shift[]>(() => {
+  const [shifts] = useState<Shift[]>(() => {
     const saved = localStorage.getItem('shifts_data');
     return saved ? JSON.parse(saved) : MOCK_SHIFTS;
   });
 
-  const [departments, setDepartments] = useState<string[]>(() => {
+  const [departments] = useState<string[]>(() => {
       const saved = localStorage.getItem('system_departments');
       return saved ? JSON.parse(saved) : DEFAULT_DEPTS;
   });
 
-  const [jobTitles, setJobTitles] = useState<SystemDefinition[]>(() => {
+  const [jobTitles] = useState<SystemDefinition[]>(() => {
       const saved = localStorage.getItem('system_job_titles');
       return saved ? JSON.parse(saved) : MOCK_JOB_TITLES;
   });
@@ -42,7 +42,6 @@ const Employees: React.FC = () => {
   });
   
   const [cardEmployee, setCardEmployee] = useState<Employee | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -74,7 +73,7 @@ const Employees: React.FC = () => {
   const navigate = useNavigate();
   const isAdmin = true;
 
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
       setLoading(true);
       try {
           if (isServerOnline) {
@@ -89,11 +88,11 @@ const Employees: React.FC = () => {
       } finally {
           setLoading(false);
       }
-  };
+  }, [isServerOnline]);
 
   useEffect(() => {
       fetchEmployees();
-  }, [isServerOnline]);
+  }, [fetchEmployees]);
 
   const filteredEmployees = employees.filter(emp => {
     const matchesGlobal = (emp.name || '').includes(searchTerm) || 
@@ -182,7 +181,6 @@ const Employees: React.FC = () => {
             localStorage.setItem('employees_data', JSON.stringify(updated));
         }
     }
-    setOpenMenuId(null);
   };
 
   const handleBulkDelete = async () => {
@@ -230,7 +228,7 @@ const Employees: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6" onClick={() => setOpenMenuId(null)}>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -323,8 +321,7 @@ const Employees: React.FC = () => {
                     <td className="px-6 py-4 relative">
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => handleOpenModal(emp)} className="text-gray-400 hover:text-blue-600 bg-white border border-gray-200 p-1.5 rounded shadow-sm" title="تعديل سريع"><Edit className="h-3.5 w-3.5" /></button>
-                        <button onClick={(e) => { e.stopPropagation(); setCardEmployee(emp); }} className="text-gray-400 hover:text-indigo-600 bg-white border border-gray-200 p-1.5 rounded shadow-sm" title="بطاقة"><Contact className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => navigate(`/employees/${emp.id}`)} className="text-gray-400 hover:text-indigo-600 bg-white border border-gray-200 p-1.5 rounded shadow-sm" title="الملف"><User className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => navigate(`/employees/${emp.id}`)} className="text-gray-400 hover:text-indigo-600 bg-white border border-gray-200 p-1.5 rounded shadow-sm" title="الملف"><Filter className="h-3.5 w-3.5" /></button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(emp.id); }} className="text-gray-400 hover:text-red-600 bg-white border border-gray-200 p-1.5 rounded shadow-sm" title="حذف"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                     </td>
@@ -375,7 +372,7 @@ const Employees: React.FC = () => {
              <div id="employee-id-card-content" className="border border-gray-200 rounded-xl overflow-hidden shadow-lg bg-white relative">
                 <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-indigo-600 to-indigo-800"></div>
                 <div className="p-6 text-center relative pt-12">
-                    <img src={cardEmployee.avatar} className="w-28 h-28 rounded-full mx-auto border-4 border-white shadow-lg mb-4 bg-white" />
+                    <img src={cardEmployee.avatar} alt="Avatar" className="w-28 h-28 rounded-full mx-auto border-4 border-white shadow-lg mb-4 bg-white" />
                     <h3 className="text-xl font-bold text-gray-900">{cardEmployee.name}</h3>
                     <p className="text-indigo-600 font-medium mb-1">{cardEmployee.jobTitle}</p>
                     <p className="text-gray-400 text-xs mb-6">{cardEmployee.department}</p>
@@ -384,12 +381,11 @@ const Employees: React.FC = () => {
                         <div><span className="text-[10px] text-gray-400 uppercase tracking-wider block">Join Date</span><span className="font-mono font-bold text-gray-800">{cardEmployee.joinDate}</span></div>
                         <div className="col-span-2"><span className="text-[10px] text-gray-400 uppercase tracking-wider block">National ID</span><span className="font-mono font-bold text-gray-800 tracking-wide">{cardEmployee.nationalId}</span></div>
                     </div>
-                    <div className="mt-6 flex justify-center"><QrCode className="h-16 w-16 text-gray-800" /></div>
                 </div>
              </div>
              <div className="mt-6 flex justify-end gap-2">
                 <button onClick={() => setCardEmployee(null)} className="px-4 py-2 border rounded-lg hover:bg-gray-50">إغلاق</button>
-                <button onClick={handlePrintCard} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"><Printer className="h-4 w-4" /> طباعة</button>
+                <button onClick={handlePrintCard} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2">طباعة</button>
              </div>
           </div>
         </div>
@@ -404,7 +400,7 @@ const Employees: React.FC = () => {
                     <h3 className="text-xl font-bold text-gray-800">{editingId ? 'تعديل بيانات الموظف' : 'إضافة موظف جديد'}</h3>
                     <p className="text-sm text-gray-500 mt-1">البيانات الأساسية، الوظيفية، والتعاقدية</p>
                  </div>
-                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full text-gray-500"><X className="h-6 w-6" /></button>
+                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full text-gray-500"><List className="h-6 w-6" /></button>
               </div>
               
               <div className="flex border-b border-gray-200">
