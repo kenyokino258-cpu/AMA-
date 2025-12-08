@@ -1,6 +1,11 @@
 
-import { supabase } from './supabaseClient';
+import { createClient } from '@supabase/supabase-js';
 import { Employee, AttendanceRecord } from '../types';
+
+// Initialize Supabase Client directly to avoid import resolution issues
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Helper to map DB snake_case to App camelCase
 const mapEmployeeFromDB = (data: any): Employee => ({
