@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   MOCK_EMPLOYEES, 
@@ -8,7 +8,6 @@ import {
   MOCK_CONTRACTS, 
   MOCK_PAYROLL,
   MOCK_LEAVE_BALANCES,
-  MOCK_LOANS,
   DEPARTMENTS as DEFAULT_DEPTS,
   MOCK_ASSET_TYPES,
   MOCK_DOCUMENT_TYPES
@@ -37,7 +36,6 @@ import {
   Eye,
   RefreshCw,
   Box,
-  Monitor,
   Users
 } from 'lucide-react';
 import { Employee, CustodyItem, Dependent, SystemDefinition } from '../types';
@@ -47,7 +45,7 @@ import { api } from '../services/api';
 const EmployeeDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isServerOnline, t } = useContext(AppContext);
+  const { isServerOnline } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState<'profile' | 'job' | 'financial' | 'custody' | 'documents'>('profile');
   
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -85,7 +83,7 @@ const EmployeeDetails: React.FC = () => {
   
   const contractInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchEmployeeData = async () => {
+  const fetchEmployeeData = useCallback(async () => {
     setLoading(true);
     try {
         let found: Employee | undefined;
@@ -116,7 +114,7 @@ const EmployeeDetails: React.FC = () => {
     } finally {
         setLoading(false);
     }
-  };
+  }, [id, isServerOnline]);
 
   useEffect(() => {
     fetchEmployeeData();
@@ -126,7 +124,7 @@ const EmployeeDetails: React.FC = () => {
     if (savedAssets) setAssetTypes(JSON.parse(savedAssets));
     const savedDocs = localStorage.getItem('system_document_types');
     if (savedDocs) setDocTypes(JSON.parse(savedDocs));
-  }, [id, isServerOnline]);
+  }, [fetchEmployeeData]);
 
   if (!employee && !loading) {
     return (
@@ -153,7 +151,6 @@ const EmployeeDetails: React.FC = () => {
   const payroll = MOCK_PAYROLL.find(p => p.employeeName === employee.name);
   const recentAttendance = MOCK_ATTENDANCE.filter(a => a.employeeName === employee.name).slice(0, 5);
   const leaveBalance = MOCK_LEAVE_BALANCES.find(b => b.employeeName === employee.name);
-  const activeLoans = MOCK_LOANS.filter(l => l.employeeName === employee.name && l.status === 'active');
 
   const calculateDuration = (startDate: string) => {
       const start = new Date(startDate);
@@ -472,6 +469,38 @@ const EmployeeDetails: React.FC = () => {
                         </div>
                    </div>
                 </div>
+             </div>
+
+             <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-gray-800 mb-4">سجل الحضور الأخير</h3>
+                {recentAttendance.length > 0 ? (
+                   <table className="w-full text-right text-sm">
+                      <thead className="bg-gray-50">
+                         <tr>
+                            <th className="px-4 py-2">التاريخ</th>
+                            <th className="px-4 py-2">دخول</th>
+                            <th className="px-4 py-2">خروج</th>
+                            <th className="px-4 py-2">الحالة</th>
+                         </tr>
+                      </thead>
+                      <tbody>
+                         {recentAttendance.map(a => (
+                            <tr key={a.id} className="border-b border-gray-50 last:border-0">
+                               <td className="px-4 py-3 font-mono text-gray-600">{a.date}</td>
+                               <td className="px-4 py-3 font-mono">{a.checkIn}</td>
+                               <td className="px-4 py-3 font-mono">{a.checkOut}</td>
+                               <td className="px-4 py-3">
+                                  <span className={`text-xs px-2 py-1 rounded ${a.status === 'present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                     {a.status === 'present' ? 'حضور' : a.status}
+                                  </span>
+                               </td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                ) : (
+                   <p className="text-gray-400 text-sm text-center py-4">لا يوجد سجل حضور حديث</p>
+                )}
              </div>
           </div>
         )}
