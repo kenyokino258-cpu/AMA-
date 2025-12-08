@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_INSURANCE, MOCK_EMPLOYEES } from '../constants';
 import { InsuranceRecord, Employee, UserRole } from '../types';
-import { ShieldCheck, Plus, ExternalLink, Search, DollarSign, Users, FileSearch, X, AlertCircle, Save, Trash2, Edit } from 'lucide-react';
+import { ShieldCheck, Plus, Search, DollarSign, Users, FileSearch, X, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import DataControls from '../components/DataControls';
 import { AppContext } from '../App';
 
@@ -37,7 +38,6 @@ const Insurance: React.FC = () => {
   // Modals
   const [isQueryModalOpen, setIsQueryModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<InsuranceRecord | null>(null);
   
   // Add/Edit Form State
   const [editingId, setEditingId] = useState<string | null>(null);
