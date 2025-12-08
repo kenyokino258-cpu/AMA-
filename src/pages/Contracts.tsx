@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { MOCK_CONTRACTS, MOCK_CONTRACT_HISTORY, MOCK_EMPLOYEES } from '../constants';
-import { Contract, ContractHistory, Employee } from '../types';
-import { FileText, Plus, AlertTriangle, CheckCircle, Clock, Eye, X, History, FileSignature, Search, Filter, ChevronDown, Download, Trash2, Save } from 'lucide-react';
+import { Contract, Employee } from '../types';
+import { FileText, Plus, AlertTriangle, CheckCircle, Clock, X, History, FileSignature, Search, Download, Trash2, Save } from 'lucide-react';
 import DataControls from '../components/DataControls';
 
 const Contracts: React.FC = () => {
@@ -13,7 +14,7 @@ const Contracts: React.FC = () => {
   });
   
   // Dynamic Employee List
-  const [employeesList, setEmployeesList] = useState<Employee[]>(() => {
+  const [employeesList] = useState<Employee[]>(() => {
     const savedEmps = localStorage.getItem('employees_data');
     if (savedEmps) return JSON.parse(savedEmps);
     const activeDb = localStorage.getItem('active_db_id');
