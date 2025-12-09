@@ -113,6 +113,3 @@ export const translations = {
     save: 'Save Changes'
   }
 };
-
-export type Language = 'ar' | 'en';
-export type ThemeColor = 'indigo' | 'emerald' | 'violet' | 'rose' | 'amber' | 'slate';

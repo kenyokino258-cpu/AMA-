@@ -1,7 +1,8 @@
+
 import React, { useContext } from 'react';
 import { AppContext } from '../App';
 import { Palette, Globe, CheckCircle } from 'lucide-react';
-import { ThemeColor } from '../translations';
+import { ThemeColor } from '../types';
 
 const Appearance: React.FC = () => {
   const { t, language, setLanguage, themeColor, setThemeColor } = useContext(AppContext);

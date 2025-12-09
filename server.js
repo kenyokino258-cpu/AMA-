@@ -20,7 +20,13 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 // التأكد من وجود مجلد البيانات
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)){
-    fs.mkdirSync(dataDir);
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// التأكد من وجود مجلد السجلات
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)){
+    fs.mkdirSync(logsDir, { recursive: true });
 }
 
 const dbPath = path.join(dataDir, 'nizam.db');
@@ -101,6 +107,18 @@ async function initTables() {
             active INTEGER,
             permissions TEXT,
             linkedEmployeeId TEXT
+        )`);
+
+        // GPS Real-time Logs Table
+        await dbRun(`CREATE TABLE IF NOT EXISTS gps_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            deviceId TEXT,
+            lat REAL,
+            lng REAL,
+            speed REAL,
+            heading REAL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            rawData TEXT
         )`);
 
         console.log('✅ Database tables initialized.');
@@ -217,13 +235,34 @@ app.post('/api/attendance/sync', async (req, res) => {
     }
 });
 
+// --- GPS Ingestion Endpoint (For Real Devices) ---
+app.post('/api/transport/gps-data', async (req, res) => {
+    const { deviceId, lat, lng, speed, heading, rawData } = req.body;
+    try {
+        await dbRun(`INSERT INTO gps_logs (deviceId, lat, lng, speed, heading, rawData) VALUES (?, ?, ?, ?, ?, ?)`, 
+            [deviceId, lat, lng, speed, heading, JSON.stringify(rawData || {})]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/transport/history/:deviceId', async (req, res) => {
+    try {
+        const rows = await dbAll(`SELECT * FROM gps_logs WHERE deviceId = ? ORDER BY timestamp DESC LIMIT 100`, [req.params.deviceId]);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Serve Static Frontend (Production Ready) ---
 const distPath = path.join(__dirname, 'dist');
 
 if (fs.existsSync(distPath)) {
     // Serve static files with cache control
     app.use(express.static(distPath, {
-        maxAge: '1y',
+        maxAge: '1d', // Cache for 1 day
         etag: false
     }));
 
@@ -233,6 +272,10 @@ if (fs.existsSync(distPath)) {
     });
 } else {
     console.log('⚠️  Frontend build not found in /dist. Running in API-only mode.');
+    // Fallback for API mode
+    app.get('/', (req, res) => {
+        res.send('Nizam HR API Server is Running. Frontend not found.');
+    });
 }
 
 // Helper to get IP
@@ -257,7 +300,8 @@ app.listen(PORT, '0.0.0.0', () => {
     ================================================
     🌍 Local Access: http://localhost:${PORT}
     🌍 Network Access: http://${ip}:${PORT}
-    💾 Database: SQLite (WAL Mode) @ /data/nizam.db
+    💾 Database: SQLite (WAL Mode) @ ${dbPath}
+    📡 GPS Gateway: /api/transport/gps-data
     ================================================
     `);
 });

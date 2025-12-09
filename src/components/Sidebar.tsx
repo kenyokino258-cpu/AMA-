@@ -107,13 +107,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, userPermissions, u
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed top-0 ${positionClass} z-30 h-full w-64 bg-white shadow-xl transition-transform duration-300 ease-in-out
+        fixed top-0 ${positionClass} z-30 h-full w-64 bg-white dark:bg-gray-800 shadow-xl transition-transform duration-300 ease-in-out border-r dark:border-gray-700
         lg:translate-x-0 lg:static lg:h-screen
         ${transformClass}
       `}>
-        <div className="flex h-20 items-center justify-center border-b border-gray-100 relative overflow-hidden">
+        <div className="flex h-20 items-center justify-center border-b border-gray-100 dark:border-gray-700 relative overflow-hidden">
           {isExpired && (
-             <div className="absolute inset-0 bg-gray-100/80 z-10 flex items-center justify-center">
+             <div className="absolute inset-0 bg-gray-100/80 dark:bg-gray-900/80 z-10 flex items-center justify-center">
                 <Lock className="h-6 w-6 text-gray-400" />
              </div>
           )}
@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, userPermissions, u
                   <Users className="h-6 w-6 text-white" />
                </div>
             )}
-            <h1 className="text-lg font-bold text-gray-800 truncate max-w-[120px]" title={companyName}>{companyName}</h1>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 truncate max-w-[120px]" title={companyName}>{companyName}</h1>
           </div>
         </div>
 
@@ -143,14 +143,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, userPermissions, u
                     className={`
                       w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors
                       ${isActive 
-                        ? 'bg-indigo-50 text-indigo-700' 
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
+                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400' 
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-200'}
                     `}
                     style={isActive ? {
                         borderRight: isRtl ? '4px solid var(--primary-color)' : 'none',
                         borderLeft: !isRtl ? '4px solid var(--primary-color)' : 'none',
                         color: 'var(--primary-color)',
-                        backgroundColor: `${getComputedStyle(document.documentElement).getPropertyValue('--primary-color')}10` // 10% opacity
+                        // Using rgba for better dark mode compatibility with inline styles if needed, but rely on class mostly
                     } : {}}
                   >
                     <item.icon className="h-5 w-5" style={isActive ? { color: 'var(--primary-color)' } : {}} />
@@ -162,9 +162,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen, userPermissions, u
           </ul>
           
           {isExpired && (
-             <div className="mt-8 p-4 bg-red-50 rounded-lg text-center border border-red-100">
-                <p className="text-xs font-bold text-red-800 mb-1">الترخيص منتهي</p>
-                <p className="text-[10px] text-red-600">يرجى الاتصال بالمسؤول لتفعيل النظام.</p>
+             <div className="mt-8 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-center border border-red-100 dark:border-red-900">
+                <p className="text-xs font-bold text-red-800 dark:text-red-400 mb-1">الترخيص منتهي</p>
+                <p className="text-[10px] text-red-600 dark:text-red-300">يرجى الاتصال بالمسؤول لتفعيل النظام.</p>
              </div>
           )}
         </nav>

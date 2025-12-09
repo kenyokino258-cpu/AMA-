@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_PAYROLL, MOCK_EMPLOYEES, MOCK_ATTENDANCE, MOCK_LOANS } from '../constants';
 import { PayrollRecord, Employee, AttendanceRecord, LoanRecord } from '../types';
-import { Printer, Send, Search, Calendar, ChevronDown, CheckCircle, ShieldCheck, XCircle, Calculator, Settings, DownloadCloud } from 'lucide-react';
+import { Printer, Send, Search, Calendar, ChevronDown, ShieldCheck, XCircle, Calculator, Settings, DownloadCloud } from 'lucide-react';
 import DataControls from '../components/DataControls';
 import { AppContext } from '../App';
 import { useNavigate } from 'react-router-dom';
@@ -367,7 +367,6 @@ const Payroll: React.FC = () => {
         </div>
         <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-6 text-white shadow-lg flex items-center justify-between relative overflow-hidden">
            <div className="relative z-10"><p className="text-indigo-100 text-sm mb-1 font-medium">إجمالي الرواتب</p><h3 className="text-4xl font-bold tracking-tight">{totalSalaries.toLocaleString()} <span className="text-xl font-normal opacity-80">ج.م</span></h3></div>
-           {/* Removed dollar sign decoration for cleaner look */}
         </div>
       </div>
 
@@ -375,7 +374,6 @@ const Payroll: React.FC = () => {
         <div className="flex flex-col gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-center bg-gray-50/50 justify-between">
           <div className="relative w-full sm:w-80"><Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" /><input type="text" placeholder="بحث باسم الموظف..." className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-10 pl-4 focus:border-indigo-500 focus:outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
           
-          {/* SYNC FINANCIALS BUTTON */}
           <button 
             onClick={handleSyncFinancials}
             className="flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-2.5 rounded-lg hover:bg-orange-100 transition shadow-sm font-medium"
@@ -399,7 +397,6 @@ const Payroll: React.FC = () => {
                 <th className="px-6 py-4 font-semibold text-center">دورة الاعتماد</th>
                 <th className="px-6 py-4 font-semibold text-center">أدوات</th>
               </tr>
-              {/* Filter Row */}
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-6 py-2"><input type="text" className="w-full text-xs p-1.5 border rounded" value={colFilters.employeeName} onChange={(e) => setColFilters({...colFilters, employeeName: e.target.value})} /></th>
                 <th className="px-6 py-2"></th>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { MOCK_LOANS, MOCK_EMPLOYEES } from '../constants';
 import { LoanRecord, UserRole } from '../types';
-import { Plus, AlertCircle, X, UserCheck, ShieldCheck, FileText, Trash2, Edit } from 'lucide-react';
+import { Wallet, Plus, AlertCircle, X, Search, CheckCircle, XCircle, FileText, Trash2, Edit, UserCheck, ShieldCheck } from 'lucide-react';
 import DataControls from '../components/DataControls';
 import { AppContext } from '../App';
 
@@ -210,30 +210,71 @@ const Loans: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <div><h2 className="text-2xl font-bold text-gray-800">السلف والجزاءات</h2><p className="text-sm text-gray-500 mt-1">إدارة طلبات السلف، الموافقات، وتسجيل الجزاءات</p></div>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">السلف والجزاءات</h2>
+          <p className="text-sm text-gray-500 mt-1">إدارة طلبات السلف، الموافقات، وتسجيل الجزاءات والخصومات</p>
+        </div>
         <div className="flex gap-3">
           {currentUser?.role !== UserRole.EMPLOYEE && <DataControls data={loans} fileName="loans_deductions" isAdmin={isAdmin} onImport={handleImport} />}
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-shadow relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+             <div className="flex items-center justify-between mb-4 relative z-10">
+                 <h3 className="font-medium opacity-90">السلف النشطة (المتبقي)</h3>
+                 <div className="bg-white/20 p-2 rounded-lg">
+                    <Wallet className="h-5 w-5" />
+                 </div>
+             </div>
+             <div className="flex items-end gap-2 relative z-10">
+               <p className="text-4xl font-bold">
+                 {loans.filter(l => l.type === 'سلفة' && l.status === 'active').reduce((acc, curr) => acc + curr.remainingAmount, 0).toLocaleString()} 
+               </p>
+               <span className="mb-1 text-lg opacity-80">ج.م</span>
+             </div>
+         </div>
+         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
+             <div className="flex items-center justify-between mb-4">
+                 <h3 className="font-medium text-gray-600">إجمالي الجزاءات (هذا الشهر)</h3>
+                 <div className="bg-red-50 p-2 rounded-lg group-hover:bg-red-100 transition-colors">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                 </div>
+             </div>
+             <div className="flex items-end gap-2">
+               <p className="text-4xl font-bold text-gray-800">
+                 {loans.filter(l => l.type === 'جزاء' && l.requestStatus === 'approved').reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}
+               </p>
+               <span className="mb-1 text-lg text-gray-400">ج.م</span>
+             </div>
+         </div>
+      </div>
+
+      {/* Tabs */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-200 pb-1">
         <div className="flex gap-8 w-full sm:w-auto overflow-x-auto no-scrollbar">
-          <button onClick={() => setActiveTab('requests')} className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'requests' ? 'text-indigo-600' : 'text-gray-500'}`}>طلبات السلف {activeTab === 'requests' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-full"></span>}</button>
-          <button onClick={() => setActiveTab('penalties')} className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'penalties' ? 'text-red-600' : 'text-gray-500'}`}>الجزاءات والخصومات {activeTab === 'penalties' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-600 rounded-t-full"></span>}</button>
-          <button onClick={() => setActiveTab('active')} className={`pb-3 text-sm font-bold transition-all relative ${activeTab === 'active' ? 'text-green-600' : 'text-gray-500'}`}>السلف الجارية {activeTab === 'active' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600 rounded-t-full"></span>}</button>
+          <button onClick={() => setActiveTab('requests')} className={`pb-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === 'requests' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>طلبات السلف {activeTab === 'requests' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-full"></span>}<span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full text-xs mr-2">{loans.filter(l => l.type === 'سلفة' && l.requestStatus === 'pending').length}</span></button>
+          <button onClick={() => setActiveTab('penalties')} className={`pb-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === 'penalties' ? 'text-red-600' : 'text-gray-500 hover:text-gray-700'}`}>الجزاءات والخصومات {activeTab === 'penalties' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-red-600 rounded-t-full"></span>}</button>
+          <button onClick={() => setActiveTab('active')} className={`pb-3 text-sm font-bold transition-all relative whitespace-nowrap ${activeTab === 'active' ? 'text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>السلف الجارية {activeTab === 'active' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600 rounded-t-full"></span>}</button>
         </div>
         <div className="flex gap-3 w-full sm:w-auto justify-end">
-          {activeTab === 'requests' && (
-             <button onClick={() => handleOpenLoanModal()} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 transition text-sm font-medium"><Plus className="h-4 w-4" /><span>طلب سلفة</span></button>
-          )}
-          {activeTab === 'penalties' && (
-             <button onClick={() => handleOpenPenaltyModal()} className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-sm hover:bg-red-700 transition text-sm font-medium"><AlertCircle className="h-4 w-4" /><span>تسجيل جزاء</span></button>
-          )}
+          {activeTab === 'requests' && (<button onClick={() => handleOpenLoanModal()} className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-sm hover:bg-indigo-700 transition text-sm font-medium"><Plus className="h-4 w-4" /><span>طلب سلفة</span></button>)}
+          {activeTab === 'penalties' && (<button onClick={() => handleOpenPenaltyModal()} className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white shadow-sm hover:bg-red-700 transition text-sm font-medium"><AlertCircle className="h-4 w-4" /><span>تسجيل جزاء</span></button>)}
         </div>
       </div>
 
+      {/* Table Section */}
       <div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+        <div className="flex items-center p-5 border-b border-gray-100 bg-gray-50/50">
+           <div className="relative w-full sm:w-80">
+             <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+             <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="بحث باسم الموظف..." className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-9 pl-4 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all" />
+           </div>
+        </div>
         <div className="overflow-x-auto min-h-[300px]">
           <table className="w-full text-right text-sm">
             <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
@@ -246,16 +287,9 @@ const Loans: React.FC = () => {
                 <th className="px-6 py-4 font-semibold">الاعتمادات</th>
                 <th className="px-6 py-4 font-semibold text-center">الإجراءات</th>
               </tr>
-              {/* Filter Row */}
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-6 py-2"><input className="w-full text-xs p-1.5 border rounded focus:border-indigo-500 outline-none" placeholder="بحث باسم الموظف..." value={colFilters.employeeName} onChange={e => setColFilters({...colFilters, employeeName: e.target.value})} /></th>
-                <th className="px-6 py-2">
-                    <select className="w-full text-xs p-1.5 border rounded focus:border-indigo-500 outline-none" value={colFilters.type} onChange={e => setColFilters({...colFilters, type: e.target.value})}>
-                        <option value="all">الكل</option>
-                        <option value="سلفة">سلفة</option>
-                        <option value="جزاء">جزاء</option>
-                    </select>
-                </th>
+                <th className="px-6 py-2"><select className="w-full text-xs p-1.5 border rounded focus:border-indigo-500 outline-none" value={colFilters.type} onChange={e => setColFilters({...colFilters, type: e.target.value})}><option value="all">الكل</option><option value="سلفة">سلفة</option><option value="جزاء">جزاء</option></select></th>
                 <th className="px-6 py-2"><input type="number" className="w-full text-xs p-1.5 border rounded focus:border-indigo-500 outline-none" placeholder="المبلغ..." value={colFilters.amount} onChange={e => setColFilters({...colFilters, amount: e.target.value})} /></th>
                 <th className="px-6 py-2"><input type="text" className="w-full text-xs p-1.5 border rounded focus:border-indigo-500 outline-none" placeholder="YYYY-MM-DD" value={colFilters.date} onChange={e => setColFilters({...colFilters, date: e.target.value})} /></th>
                 <th className="px-6 py-2 bg-gray-100"></th>
@@ -270,38 +304,14 @@ const Loans: React.FC = () => {
                     <td className="px-6 py-4"><span className={`px-2 py-1 rounded text-xs ${record.type === 'جزاء' ? 'bg-red-100 text-red-800' : 'bg-gray-100'}`}>{record.type}</span></td>
                     <td className="px-6 py-4 font-bold">{record.amount.toLocaleString()} ج.م</td>
                     <td className="px-6 py-4 text-gray-600 font-mono">{record.date}</td>
-                    <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px]">{record.reason}</td>
-                    <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 text-[10px]">
-                            {record.requestStatus === 'pending' && <span className="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded w-fit">انتظار المراجعة</span>}
-                            {record.reviewedBy && <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit flex items-center gap-1"><UserCheck className="h-3 w-3" /> مراجعة: {record.reviewedBy}</span>}
-                            {record.approvedBy && <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded w-fit flex items-center gap-1 font-bold"><ShieldCheck className="h-3 w-3" /> اعتماد: {record.approvedBy}</span>}
-                        </div>
-                    </td>
+                    <td className="px-6 py-4 text-xs text-gray-500 max-w-[200px]"><div className="flex flex-col gap-1">{record.type === 'سلفة' && record.installments && (<span className="inline-block bg-gray-100 px-1.5 py-0.5 rounded w-fit">{record.installments} أقساط</span>)}{record.reason && <span className="truncate" title={record.reason}>{record.reason}</span>}</div></td>
+                    <td className="px-6 py-4"><div className="flex flex-col gap-1 text-[10px]">{record.requestStatus === 'pending' && <span className="text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded w-fit">انتظار المراجعة</span>}{record.reviewedBy && <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit flex items-center gap-1"><UserCheck className="h-3 w-3" /> مراجعة: {record.reviewedBy}</span>}{record.approvedBy && <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded w-fit flex items-center gap-1 font-bold"><ShieldCheck className="h-3 w-3" /> اعتماد: {record.approvedBy}</span>}</div></td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex justify-center gap-2">
-                          {/* Workflow for Admins */}
-                          {isAdmin && record.requestStatus === 'pending' && (
-                              <button onClick={() => handleReview(record.id)} className="p-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-xs hover:bg-yellow-100" title="مراجعة"><UserCheck className="h-4 w-4" /></button>
-                          )}
-                          {isAdmin && record.requestStatus === 'reviewed' && (
-                              <button onClick={() => handleApprove(record.id)} className="p-1.5 bg-green-50 text-green-700 border border-green-200 rounded text-xs hover:bg-green-100 font-bold" title="اعتماد نهائي"><ShieldCheck className="h-4 w-4" /></button>
-                          )}
-                          {isAdmin && (record.requestStatus === 'pending' || record.requestStatus === 'reviewed') && (
-                              <button onClick={() => handleReject(record.id)} className="p-1.5 rounded text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100" title="رفض"><X className="h-4 w-4" /></button>
-                          )}
-
-                          {/* Edit / Delete */}
-                          {(isAdmin || (record.requestStatus === 'pending' && currentUser?.fullName === record.employeeName)) && (
-                              <>
-                                <button onClick={() => record.type === 'سلفة' ? handleOpenLoanModal(record) : handleOpenPenaltyModal(record)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="تعديل">
-                                    <Edit className="h-4 w-4" />
-                                </button>
-                                <button onClick={() => handleDelete(record.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="حذف">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                              </>
-                          )}
+                          {isAdmin && record.requestStatus === 'pending' && (<button onClick={() => handleReview(record.id)} className="p-1.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-xs hover:bg-yellow-100" title="مراجعة"><UserCheck className="h-4 w-4" /></button>)}
+                          {isAdmin && record.requestStatus === 'reviewed' && (<button onClick={() => handleApprove(record.id)} className="p-1.5 bg-green-50 text-green-700 border border-green-200 rounded text-xs hover:bg-green-100 font-bold" title="اعتماد نهائي"><ShieldCheck className="h-4 w-4" /></button>)}
+                          {isAdmin && (record.requestStatus === 'pending' || record.requestStatus === 'reviewed') && (<button onClick={() => handleReject(record.id)} className="p-1.5 rounded text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100" title="رفض"><X className="h-4 w-4" /></button>)}
+                          {(isAdmin || (record.requestStatus === 'pending' && currentUser?.fullName === record.employeeName)) && (<><button onClick={() => record.type === 'سلفة' ? handleOpenLoanModal(record) : handleOpenPenaltyModal(record)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="تعديل"><Edit className="h-4 w-4" /></button><button onClick={() => handleDelete(record.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="حذف"><Trash2 className="h-4 w-4" /></button></>)}
                       </div>
                     </td>
                   </tr>
