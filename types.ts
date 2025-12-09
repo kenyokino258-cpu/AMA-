@@ -1,7 +1,4 @@
 
-export type Language = 'ar' | 'en';
-export type ThemeColor = 'indigo' | 'emerald' | 'violet' | 'rose' | 'amber' | 'slate';
-
 export enum EmploymentType {
   FULL_TIME = 'دوام كامل',
   PART_TIME = 'دوام جزئي',
@@ -25,68 +22,15 @@ export enum UserRole {
   VIEWER = 'قراءة فقط'
 }
 
-// --- Master Data Definitions ---
-export interface PublicHoliday {
-  id: string;
-  name: string;
-  date: string; // YYYY-MM-DD
-}
-
-export interface SystemDefinition {
-  id: string;
-  name: string;
-  type: 'job_title' | 'asset_type' | 'document_type';
-}
-
-// --- Performance Module ---
-export interface KPI {
-  id: string;
-  name: string;
-  targetValue: number;
-  actualValue: number;
-  weight: number; 
-  score: number; 
-  unit: string; 
-}
-
-export interface PerformanceReview {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  period: string; 
-  kpis: KPI[];
-  totalScore: number;
-  status: 'draft' | 'submitted' | 'approved';
-  feedback?: string;
-  evaluationDate: string;
-}
-
-// --- Payroll Config ---
-export interface PayrollConfig {
-  taxPercentage: number;
-  insuranceCompanyPercentage: number;
-  insuranceEmployeePercentage: number;
-  housingAllowancePercentage: number;
-  transportAllowancePercentage: number;
-}
-
-export interface RoleDefinition {
-  id: string;
-  name: string; 
-  isSystem?: boolean; 
-  permissions: string[]; 
-}
-
 export interface SystemUser {
   id: string;
   username: string;
   fullName: string;
-  role: string; 
+  role: UserRole;
   email: string;
   active: boolean;
   lastLogin: string;
   permissions?: string[];
-  linkedEmployeeId?: string; 
 }
 
 export interface SystemDatabase {
@@ -96,37 +40,6 @@ export interface SystemDatabase {
   status: 'active' | 'archived';
   createdAt: string;
   usersCount: number;
-}
-
-// --- Shift Management ---
-export interface Shift {
-  id: string;
-  name: string;
-  startTime: string; // HH:mm
-  endTime: string;   // HH:mm
-  days: string[];    // Array of days e.g. ['Sunday', 'Monday']
-}
-
-// --- Master Data Extended Types ---
-export interface CustodyItem {
-  id: string;
-  name: string; 
-  type: string; // Laptop, Mobile, etc.
-  serialNumber?: string;
-  receivedDate: string;
-  status: 'Active' | 'Returned' | 'Lost';
-  returnedDate?: string;
-  cost?: number;
-  notes?: string;
-}
-
-export interface Dependent {
-  id: string;
-  name: string;
-  relation: string; // Wife, Son, Daughter
-  birthDate: string;
-  nationalId?: string;
-  isInsured?: boolean;
 }
 
 export interface Employee {
@@ -144,47 +57,10 @@ export interface Employee {
   contractStartDate?: string;
   contractEndDate?: string;
   endOfServiceDate?: string;
-  shiftId?: string; // Link to Shift
-  shiftName?: string; // Denormalized for display
-  managerId?: string; // Link to another Employee (Direct Manager)
-  
-  // Extended Master Data
-  email?: string;
-  phone?: string;
-  address?: string;
-  gender?: 'male' | 'female';
-  birthDate?: string;
-  maritalStatus?: 'single' | 'married' | 'divorced' | 'widowed';
-
-  // Master Data - Assets & Family
-  custody?: CustodyItem[];
-  dependents?: Dependent[];
-
   // Transport Integration
   isDriver?: boolean;
   driverLicenseNumber?: string;
   driverLicenseExpiry?: string;
-  
-  certificates?: { 
-    id: string;
-    name: string; 
-    date: string; 
-    fileName?: string;
-    fileUrl?: string; 
-  }[];
-  documents?: {
-    id: string;
-    name: string;
-    type: string;
-    category?: string; // Document Type (e.g. ID, Contract)
-    size: string;
-    date: string;
-    fileUrl?: string;
-  }[];
-  contractFile?: {
-    fileName: string;
-    fileUrl: string;
-  };
 }
 
 export interface AttendanceRecord {
@@ -196,8 +72,8 @@ export interface AttendanceRecord {
   checkOut: string;
   status: 'present' | 'absent' | 'late' | 'excused';
   workHours: number;
-  employeeCode?: string;
-  source?: 'Fingerprint' | 'Manual' | 'Mobile';
+  employeeCode?: string; // Optional for display
+  source?: 'Fingerprint' | 'Manual' | 'Mobile'; // Track where data came from
 }
 
 export interface BiometricDevice {
@@ -217,10 +93,7 @@ export interface Candidate {
   position: string;
   experience: string;
   status: ApplicationStatus;
-  rating: number; 
-  email?: string;
-  phone?: string;
-  appliedDate?: string;
+  rating: number; // 1-5
 }
 
 export interface MenuItem {
@@ -230,6 +103,7 @@ export interface MenuItem {
   path: string;
 }
 
+// New Types
 export interface Contract {
   id: string;
   employeeName: string;
@@ -267,10 +141,7 @@ export interface LeaveRequest {
   startDate: string;
   endDate: string;
   days: number;
-  status: 'approved' | 'pending' | 'rejected' | 'reviewed';
-  reviewedBy?: string;
-  approvedBy?: string;
-  rejectionReason?: string;
+  status: 'approved' | 'pending' | 'rejected';
 }
 
 export interface LeaveBalance {
@@ -294,9 +165,7 @@ export interface PayrollRecord {
   deductions: number;
   netSalary: number;
   paymentDate: string;
-  status: 'paid' | 'pending' | 'reviewed';
-  auditedBy?: string;   
-  approvedBy?: string;  
+  status: 'paid' | 'pending';
 }
 
 export interface LoanRecord {
@@ -309,21 +178,18 @@ export interface LoanRecord {
   status: 'active' | 'completed' | 'pending';
   installments?: number;
   reason?: string;
-  requestStatus?: 'pending' | 'approved' | 'rejected' | 'reviewed';
-  reviewedBy?: string;
+  requestStatus?: 'pending' | 'approved' | 'rejected';
   approvedBy?: string;
 }
+
+// --- Transport Module Types ---
 
 export interface GpsLocation {
   lat: number;
   lng: number;
-  heading: number; 
   lastUpdate: string;
   speed: number;
   address?: string;
-  fuelLevel?: number;
-  ignition?: 'on' | 'off';
-  batteryVoltage?: number;
 }
 
 export interface Vehicle {
@@ -369,41 +235,4 @@ export interface MaintenanceLog {
   description: string;
   cost: number;
   type: 'دورية' | 'إصلاح' | 'تغيير زيت';
-  invoiceUrl?: string;
-  status: 'pending' | 'reviewed' | 'approved' | 'rejected';
-  createdBy?: string;
-  reviewedBy?: string;
-  approvedBy?: string;
-}
-
-export interface Notification {
-  id: number;
-  title: string;
-  desc: string;
-  time: string;
-  unread: boolean;
-}
-
-export interface AppContextType {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  showNotifications: boolean;
-  setShowNotifications: (show: boolean) => void;
-  isPaidVersion: boolean;
-  isExpired: boolean; 
-  trialDaysLeft: number;
-  notifications: Notification[];
-  addNotification: (title: string, desc: string) => void;
-  handleLogout: () => void;
-  currentUser: SystemUser | null;
-  isServerOnline: boolean;
-  
-  // Theme & Language
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  themeColor: ThemeColor;
-  setThemeColor: (color: ThemeColor) => void;
-  themeMode: 'light' | 'dark';
-  setThemeMode: (mode: 'light' | 'dark') => void;
-  t: (key: string) => string;
 }

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { MOCK_USERS, MOCK_DATABASES, MOCK_EMPLOYEES, DEFAULT_ROLES, DEPARTMENTS as DEFAULT_DEPTS, DEFAULT_PAYROLL_CONFIG, MOCK_HOLIDAYS, MOCK_JOB_TITLES, MOCK_ASSET_TYPES, MOCK_DOCUMENT_TYPES } from '../constants';
 import { SystemUser, SystemDatabase, UserRole, Employee, RoleDefinition, PayrollConfig, PublicHoliday, SystemDefinition } from '../types';
-import { getDeviceId, validateLicenseKey } from '../utils/security';
+import { getDeviceId, validateLicenseKey } from '../security';
 import { 
   Users, Database, Lock, Plus, Trash2, CheckCircle, XCircle, Key, Shield, Save, Server, CreditCard, RotateCcw, Copy, HardDrive, Download, Upload, FileJson, AlertTriangle, Building2, Image as ImageIcon, CheckSquare, Square, Edit, Star, UserCheck, Briefcase, Network, DollarSign, Calendar, ListChecks, FileText, Box
 } from 'lucide-react';
@@ -996,7 +996,10 @@ const Settings: React.FC<SettingsProps> = ({ onSubscriptionChange, isExpired }) 
                    </div>
                 </form>
               </div>
-              <div className="p-4 border-t flex justify-end gap-2"><button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 border rounded">إلغاء</button><button onClick={handleSaveUser} className="px-4 py-2 bg-indigo-600 text-white rounded">حفظ</button></div>
+              <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2 shrink-0">
+                 <button onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">إلغاء</button>
+                 <button onClick={handleSaveUser} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">{userForm.id ? 'حفظ التعديلات' : 'إنشاء المستخدم'}</button>
+              </div>
            </div>
         </div>
       )}

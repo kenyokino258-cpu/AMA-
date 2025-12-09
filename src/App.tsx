@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext, createContext, Suspense } from 
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Bell, Search, UserCircle, X, LogOut, Lock, Wifi, WifiOff, Loader } from 'lucide-react';
 import { SystemUser, UserRole, Notification, AppContextType, Language, ThemeColor } from './types';
-import { getDeviceId, validateLicenseKey } from './utils/security';
+import { getDeviceId, validateLicenseKey } from './security';
 import { api } from './services/api';
 import { translations } from './translations';
 

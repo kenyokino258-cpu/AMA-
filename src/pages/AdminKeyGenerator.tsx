@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { generateLicenseKey } from '../utils/security';
+import { generateLicenseKey } from '../security';
 import { Shield, Lock, Copy, Check, Terminal, CalendarClock } from 'lucide-react';
 
 const AdminKeyGenerator: React.FC = () => {

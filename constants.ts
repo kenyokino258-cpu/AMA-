@@ -1,92 +1,5 @@
 
-import { Employee, EmploymentType, Candidate, ApplicationStatus, AttendanceRecord, Contract, ContractHistory, InsuranceRecord, LeaveRequest, PayrollRecord, LoanRecord, LeaveBalance, SystemUser, UserRole, SystemDatabase, Vehicle, Driver, Trip, MaintenanceLog, BiometricDevice, Shift, RoleDefinition, PerformanceReview, PayrollConfig, PublicHoliday, SystemDefinition, GpsLocation } from './types';
-
-export const DEFAULT_PAYROLL_CONFIG: PayrollConfig = {
-  taxPercentage: 10,
-  insuranceEmployeePercentage: 11, 
-  insuranceCompanyPercentage: 18.75,
-  housingAllowancePercentage: 0,
-  transportAllowancePercentage: 0
-};
-
-export const MOCK_HOLIDAYS: PublicHoliday[] = [
-  { id: 'PH1', name: 'عيد العمال', date: '2024-05-01' },
-  { id: 'PH2', name: 'رأس السنة الهجرية', date: '2024-07-07' },
-  { id: 'PH3', name: 'ثورة 23 يوليو', date: '2024-07-23' },
-  { id: 'PH4', name: 'المولد النبوي الشريف', date: '2024-09-15' },
-  { id: 'PH5', name: 'عيد القوات المسلحة', date: '2024-10-06' },
-];
-
-export const MOCK_JOB_TITLES: SystemDefinition[] = [
-  { id: 'JT1', name: 'مدير عام', type: 'job_title' },
-  { id: 'JT2', name: 'مدير موارد بشرية', type: 'job_title' },
-  { id: 'JT3', name: 'محاسب', type: 'job_title' },
-  { id: 'JT4', name: 'مهندس برمجيات', type: 'job_title' },
-  { id: 'JT5', name: 'مسؤول مبيعات', type: 'job_title' },
-  { id: 'JT6', name: 'سائق', type: 'job_title' },
-];
-
-export const MOCK_ASSET_TYPES: SystemDefinition[] = [
-  { id: 'AT1', name: 'لابتوب / كمبيوتر', type: 'asset_type' },
-  { id: 'AT2', name: 'هاتف محمول', type: 'asset_type' },
-  { id: 'AT3', name: 'سيارة', type: 'asset_type' },
-  { id: 'AT4', name: 'شريحة اتصال', type: 'asset_type' },
-  { id: 'AT5', name: 'أدوات مكتبية', type: 'asset_type' },
-];
-
-export const MOCK_DOCUMENT_TYPES: SystemDefinition[] = [
-  { id: 'DT1', name: 'بطاقة رقم قومي', type: 'document_type' },
-  { id: 'DT2', name: 'جواز سفر', type: 'document_type' },
-  { id: 'DT3', name: 'صحيفة حالة جنائية', type: 'document_type' },
-  { id: 'DT4', name: 'شهادة ميلاد', type: 'document_type' },
-  { id: 'DT5', name: 'شهادة تخرج', type: 'document_type' },
-  { id: 'DT6', name: 'استمارة 6 تأمينات', type: 'document_type' },
-  { id: 'DT7', name: 'شهادة جيش', type: 'document_type' },
-];
-
-export const MOCK_PERFORMANCE_REVIEWS: PerformanceReview[] = [
-  {
-    id: 'PR-001',
-    employeeId: 'E001',
-    employeeName: 'أحمد محمد علي',
-    period: 'Q3 2023',
-    totalScore: 92,
-    status: 'approved',
-    evaluationDate: '2023-10-01',
-    kpis: [
-      { id: 'K1', name: 'تسليم المشاريع في الوقت', targetValue: 5, actualValue: 5, weight: 40, score: 40, unit: 'Project' },
-      { id: 'K2', name: 'جودة الكود (Bug Free)', targetValue: 95, actualValue: 98, weight: 30, score: 30, unit: '%' },
-      { id: 'K3', name: 'العمل الجماعي', targetValue: 10, actualValue: 8, weight: 30, score: 24, unit: 'Rating' }
-    ]
-  },
-  {
-    id: 'PR-002',
-    employeeId: 'E004',
-    employeeName: 'منى كامل',
-    period: 'Q3 2023',
-    totalScore: 85,
-    status: 'approved',
-    evaluationDate: '2023-10-05',
-    kpis: [
-      { id: 'K1', name: 'تحقيق المبيعات', targetValue: 100000, actualValue: 95000, weight: 50, score: 47.5, unit: 'EGP' },
-      { id: 'K2', name: 'رضا العملاء', targetValue: 5, actualValue: 4.5, weight: 30, score: 27, unit: 'Stars' },
-      { id: 'K3', name: 'تقارير دورية', targetValue: 12, actualValue: 12, weight: 20, score: 20, unit: 'Report' }
-    ]
-  }
-];
-
-export const DEFAULT_ROLES: RoleDefinition[] = [
-  { id: 'R1', name: UserRole.ADMIN, isSystem: true, permissions: ['dashboard', 'employees', 'org-chart', 'shifts', 'recruitment', 'transport', 'contracts', 'insurance', 'attendance', 'leaves', 'payroll', 'loans', 'reports', 'settings', 'performance'] },
-  { id: 'R2', name: UserRole.HR_MANAGER, isSystem: true, permissions: ['dashboard', 'employees', 'org-chart', 'shifts', 'recruitment', 'contracts', 'insurance', 'attendance', 'leaves', 'reports', 'performance'] },
-  { id: 'R3', name: UserRole.PAYROLL, isSystem: true, permissions: ['dashboard', 'attendance', 'payroll', 'loans', 'reports'] },
-  { id: 'R4', name: UserRole.EMPLOYEE, isSystem: true, permissions: ['dashboard', 'attendance', 'leaves', 'loans', 'performance'] },
-];
-
-export const MOCK_SHIFTS: Shift[] = [
-  { id: 'SH1', name: 'الوردية الصباحية', startTime: '08:00', endTime: '16:00', days: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] },
-  { id: 'SH2', name: 'الوردية المسائية', startTime: '16:00', endTime: '00:00', days: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] },
-  { id: 'SH3', name: 'وردية المصنع', startTime: '07:00', endTime: '19:00', days: ['السبت', 'الاثنين', 'الأربعاء'] },
-];
+import { Employee, EmploymentType, Candidate, ApplicationStatus, AttendanceRecord, Contract, ContractHistory, InsuranceRecord, LeaveRequest, PayrollRecord, LoanRecord, LeaveBalance, SystemUser, UserRole, SystemDatabase, Vehicle, Driver, Trip, MaintenanceLog, BiometricDevice } from './types';
 
 export const MOCK_USERS: SystemUser[] = [
   { id: 'U1', username: 'admin', fullName: 'مدير النظام', role: UserRole.ADMIN, email: 'admin@company.com', active: true, lastLogin: '2023-10-25 09:00' },
@@ -116,8 +29,6 @@ export const MOCK_EMPLOYEES: Employee[] = [
     contractType: EmploymentType.FULL_TIME,
     contractStartDate: '2023-01-01',
     contractEndDate: '2024-01-01',
-    shiftId: 'SH1',
-    shiftName: 'الوردية الصباحية'
   },
   {
     id: 'E002',
@@ -133,8 +44,6 @@ export const MOCK_EMPLOYEES: Employee[] = [
     contractType: EmploymentType.FULL_TIME,
     contractStartDate: '2021-01-10',
     contractEndDate: '-',
-    shiftId: 'SH1',
-    shiftName: 'الوردية الصباحية'
   },
   {
     id: 'E003',
@@ -150,8 +59,6 @@ export const MOCK_EMPLOYEES: Employee[] = [
     contractType: EmploymentType.CONTRACT,
     contractStartDate: '2023-06-01',
     contractEndDate: '2023-12-31',
-    shiftId: 'SH1',
-    shiftName: 'الوردية الصباحية'
   },
   {
     id: 'E004',
@@ -167,8 +74,6 @@ export const MOCK_EMPLOYEES: Employee[] = [
     contractType: EmploymentType.FULL_TIME,
     contractStartDate: '2023-02-20',
     contractEndDate: '2024-02-20',
-    shiftId: 'SH2',
-    shiftName: 'الوردية المسائية'
   },
   {
     id: 'E005',
@@ -186,9 +91,7 @@ export const MOCK_EMPLOYEES: Employee[] = [
     contractEndDate: '2024-01-01',
     isDriver: true,
     driverLicenseNumber: 'DL-885522',
-    driverLicenseExpiry: '2026-05-20',
-    shiftId: 'SH3',
-    shiftName: 'وردية المصنع'
+    driverLicenseExpiry: '2026-05-20'
   },
 ];
 
@@ -298,17 +201,7 @@ export const MOCK_LOANS: LoanRecord[] = [
   }
 ];
 
-export const MOCK_GPS_LOCATION: GpsLocation = {
-  lat: 30.0444, 
-  lng: 31.2357, 
-  heading: 90, 
-  lastUpdate: 'الآن', 
-  speed: 45, 
-  address: 'وسط البلد، القاهرة', 
-  fuelLevel: 75, 
-  ignition: 'on', 
-  batteryVoltage: 14.1 
-};
+// --- Transport Mock Data ---
 
 export const MOCK_VEHICLES: Vehicle[] = [
   { 
@@ -319,7 +212,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
     status: 'active', 
     licenseExpiry: '2025-01-01', 
     currentOdometer: 25000,
-    gps: MOCK_GPS_LOCATION
+    gps: { lat: 30.0444, lng: 31.2357, lastUpdate: 'الآن', speed: 45, address: 'وسط البلد، القاهرة' } 
   },
   { 
     id: 'V02', 
@@ -329,7 +222,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
     status: 'maintenance', 
     licenseExpiry: '2024-12-15', 
     currentOdometer: 150000,
-    gps: { ...MOCK_GPS_LOCATION, lat: 30.0131, lng: 31.2089, heading: 0, lastUpdate: 'منذ 5 دقائق', speed: 0, address: 'الجيزة، الورشة المركزية', fuelLevel: 30, ignition: 'off', batteryVoltage: 12.4 }
+    gps: { lat: 30.0131, lng: 31.2089, lastUpdate: 'منذ 5 دقائق', speed: 0, address: 'الجيزة، الورشة المركزية' }
   },
   { 
     id: 'V03', 
@@ -339,7 +232,7 @@ export const MOCK_VEHICLES: Vehicle[] = [
     status: 'active', 
     licenseExpiry: '2025-06-30', 
     currentOdometer: 340000,
-    gps: { ...MOCK_GPS_LOCATION, lat: 31.2001, lng: 29.9187, heading: 270, lastUpdate: 'الآن', speed: 80, address: 'طريق الإسكندرية الصحراوي', fuelLevel: 90, ignition: 'on', batteryVoltage: 24.3 }
+    gps: { lat: 31.2001, lng: 29.9187, lastUpdate: 'الآن', speed: 80, address: 'طريق الإسكندرية الصحراوي' }
   },
 ];
 
@@ -352,8 +245,7 @@ export const MOCK_TRIPS: Trip[] = [
 ];
 
 export const MOCK_MAINTENANCE: MaintenanceLog[] = [
-  { id: 'M01', vehicleId: 'V02', plateNumber: 'س ص ع 456', date: '2023-10-20', description: 'تغيير زيت وفلاتر', cost: 1500, type: 'تغيير زيت', status: 'approved', createdBy: 'Admin', approvedBy: 'Manager' },
-  { id: 'M02', vehicleId: 'V01', plateNumber: 'أ ب ج 123', date: '2023-10-26', description: 'صيانة دورية 30 ألف', cost: 3000, type: 'دورية', status: 'pending', createdBy: 'سعيد الصاوي' },
+  { id: 'M01', vehicleId: 'V02', plateNumber: 'س ص ع 456', date: '2023-10-20', description: 'تغيير زيت وفلاتر', cost: 1500, type: 'تغيير زيت' },
 ];
 
 export const DEPARTMENTS = ['الموارد البشرية', 'المالية', 'تكنولوجيا المعلومات', 'التسويق', 'المبيعات', 'العمليات', 'النقل والحركة'];
