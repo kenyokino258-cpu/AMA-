@@ -17,6 +17,7 @@ export const translations = {
     reports: 'التقارير',
     settings: 'الإعدادات',
     performance: 'إدارة الأداء', 
+    appearance: 'المظهر واللغة',
     
     // General
     welcome: 'مرحباً',
@@ -30,7 +31,6 @@ export const translations = {
     
     // Settings
     systemSettings: 'إعدادات النظام',
-    appearance: 'المظهر واللغة',
     companyInfo: 'بيانات الشركة',
     users: 'المستخدمين',
     roles: 'الأدوار',
@@ -73,6 +73,7 @@ export const translations = {
     reports: 'Reports',
     settings: 'Settings',
     performance: 'Performance', 
+    appearance: 'Appearance',
 
     // General
     welcome: 'Welcome',
@@ -86,7 +87,6 @@ export const translations = {
 
     // Settings
     systemSettings: 'System Settings',
-    appearance: 'Appearance',
     companyInfo: 'Company Info',
     users: 'Users',
     roles: 'Roles',
