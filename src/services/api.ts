@@ -2,9 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Employee, AttendanceRecord } from '../types';
 
-// Initialize Supabase Client directly to avoid import resolution issues
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || '';
-const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+// Initialize Supabase Client
+// Use placeholders to prevent "supabaseUrl is required" error during initial render if env vars are missing
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'placeholder-key';
+
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Helper to map DB snake_case to App camelCase
@@ -71,17 +73,24 @@ export const api = {
   // Check Supabase Connection
   checkHealth: async () => {
     try {
+      // If we are using placeholders, assume offline/local immediately
+      if (supabaseUrl === 'https://placeholder.supabase.co') {
+         throw new Error("Env vars missing");
+      }
+
       // Try Supabase first
       const { error } = await supabase.from('employees').select('id').limit(1);
       if (!error) return { status: 'ok' };
       
-      // Fallback to local server check
-      const res = await fetch('http://localhost:5000/api/health');
-      if (res.ok) return { status: 'ok' };
-      
-      throw new Error("No backend connection");
+      throw new Error("Supabase connection failed");
     } catch (e) {
-      console.error("Connection check failed", e);
+      // Fallback to local server check if Supabase fails or isn't configured
+      try {
+        const res = await fetch('http://localhost:5000/api/health');
+        if (res.ok) return { status: 'ok' };
+      } catch (localErr) {
+        // Double fail
+      }
       throw e;
     }
   },
